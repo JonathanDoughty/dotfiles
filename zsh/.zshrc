@@ -5,6 +5,9 @@
 # zmodload zsh/zprof
 # then enter zload to see profiling info https://stackoverflow.com/a/58524231/1124740
 
+# Ensure path arrays do not contain duplicates.
+typeset -gU cdpath fpath mailpath path
+
 # Additions to default path
 path=(~/.local/bin ~/CM/Base/bin ~/CM/Base/Darwin $path)
 
@@ -58,8 +61,6 @@ if [[ "$ZSH_EVAL_CONTEXT" == "file" ]]; then
     source ${DOTFILES}/bash-brew.sh # issues with read - ask()?
     source ${DOTFILES}/bash-emacs.sh
     source ${DOTFILES}/bash-tmux.sh
-    #source ${DOTFILES}/directory-functions.sh # issue with PROMPT_COMMAND?
-    #source ${DOTFILES}/man_page_viewer.sh
     source ${DOTFILES}/enable_fzf.sh
     source ${DOTFILES}/misc-functions.sh # lazy loads from others
 fi

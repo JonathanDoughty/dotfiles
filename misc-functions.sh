@@ -15,15 +15,17 @@ _is_type () {
     # check type of $1 for bash or zsh
     local target type candidate
     target="$1"; shift
-    if [ -n "$BASH_VERSION" ]; then
+    if [[ -n "$BASH_VERSION" ]]; then
         type="$(type -t "$target" 2>&1)"
-    elif [ -n "$ZSH_VERSION" ]; then
+    elif [[ -n "$ZSH_VERSION" ]]; then
         type="$(whence -w "$target" 2>&1)"
     else
         printf "Don't know type/whence equivalent for %s\n" "$SHELL" && return 1
     fi
     for candidate in "$@"; do
-        [ $_debug -gt 1 ] && printf "candidate=%s type %s %s =%s\n" "$candidate" "$OPT" "$target" "$type"
+        [[ -n "$ZSH_VERSION" ]] && [[ $candidate == "file" ]] && candidate="command"
+        [[ $_debug -gt 1 ]] && \
+            printf "candidate=%s type %s %s =%s\n" "$candidate" "$OPT" "$target" "$type"
         case "$type" in
         (*$candidate) return 0 ;;
         esac

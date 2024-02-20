@@ -2,12 +2,13 @@
 # bash_brew.sh - brew related shell integration and aliases/functions
 
 if [[ -n "$ZSH_VERSION" ]]; then
-    return 1;
-    # See https://docs.brew.sh/Shell-Completion#configuring-completions-in-zsh
+    :
+    # Also see https://docs.brew.sh/Shell-Completion#configuring-completions-in-zsh
     # TODO handle brew in virtualenvs
 fi
 
-[[ $_ != "$0" ]] || { echo "This file must be sourced to be useful."; exit 1; }
+# shellcheck disable=SC2030 # _verbose used by is_sourced from shell-func.sh
+( _verbose=1 && is_sourced )
 
 # Set up brew shellenv and shell completion if installed
 # allowing for early definition of HOMEBREW_PREFIX
@@ -23,18 +24,20 @@ for d in "${candidates[@]}"; do
                 eval "$("${HOMEBREW_DIR}"/bin/brew shellenv)" ;;
         esac
         MANPATH="${MANPATH/:$/}"; export MANPATH # brew's shellenv appends an extra :
-        [[ "${_verbose:=0}" -gt 0 ]] && \
-            printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
-        if [[ -r "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh" ]]
-        then
-            # shellcheck disable=1091
-            source "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh"
-        else
-            for COMPLETION in "${HOMEBREW_DIR}/etc/bash_completion.d/"*
-            do
-                # shellcheck disable=1090
-                [[ -r "${COMPLETION}" ]] && source "${COMPLETION}"
-            done
+        if [[ -n "$BASH_VERSION" ]]; then
+            [[ "${_verbose:=0}" -gt 0 ]] && \
+                printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
+            if [[ -r "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh" ]]
+            then
+                # shellcheck disable=1091
+                source "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh"
+            else
+                for COMPLETION in "${HOMEBREW_DIR}/etc/bash_completion.d/"*
+                do
+                    # shellcheck disable=1090
+                    [[ -r "${COMPLETION}" ]] && source "${COMPLETION}"
+                done
+            fi
         fi
         break
     fi
@@ -46,7 +49,8 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
         local python_path
 
         check_python () {
-            python_path="$(type -p python3)"
+            [[ -n "$BASH_VERSION" ]] && python_path="$(type -p python3)"
+            [[ -n "$ZSH_VERSION" ]] && python_path="$(whence python3)"
             # Check that brew will use homebrew's own python
             # See https://docs.brew.sh/Homebrew-and-Python#virtualenv
             if [[ "$python_path" != "${HOMEBREW_PREFIX}/bin/python3" ]]; then
