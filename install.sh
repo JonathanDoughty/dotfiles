@@ -30,6 +30,7 @@ HOSTNAME=$(hostname -s)
 HOSTNAME=${HOSTNAME%%[-]*}      # strip off any multi-interface name components
 
 DOT_PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"  # This directory
+CONFIGS="${HOME}/.config"
 CACHE_PATH="${HOME}/Downloads"
 CM_ROOT=/Volumes/CM             # Currently used only for .editorconfig
 EMACS_PATH="${HOME}/CM/emacs"
@@ -58,13 +59,20 @@ trace() {
     printf '%s\n' "${_output_array[@]}" >&2
 }
 
+vprintf () {
+    local level=$1; shift
+    local fmt=$2; shift
+    # shellcheck disable=SC2059 # the point is to pass in fmt
+    [[ $VERBOSE -gt $level ]] && printf "$fmt" "$@"
+}
+
 check_source () {
     # Check if source exists and return corresponding result path
-    [[ $VERBOSE -gt 1 ]] && printf "\nChecking args 1:%s 2:%s\n" "$1" "$2"
+    vprintf 1 "\nChecking args 1:%s 2:%s\n" "$1" "$2"
     [[ $DEBUG -gt 1 ]] && trace "$LINENO" "${BASH_LINENO[@]}"
     SOURCE=$1
     if [ ! -e "${SOURCE}" ]; then
-        printf "\nWARNING: %s does not exist, skipping\n" "${SOURCE}"
+        vprintf 1 "\nWARNING: %s does not exist, skipping\n" "${SOURCE}"
         SOURCE=
         return
     fi
@@ -85,7 +93,7 @@ check_source () {
 
 maybe () {
     local cmd=( "$@" )
-    [[ $VERBOSE -gt 1 || $DRY_RUN -gt 0 ]] && printf "%s\n" "${cmd[*]}"
+    [[ $DRY_RUN -gt 0 ]] && vprintf 1 "%s\n" "${cmd[*]}"
     if [[ $DRY_RUN -eq 0 ]]; then
         eval "${cmd[*]}"
     fi
@@ -94,7 +102,7 @@ maybe () {
 link_if_not_present () {
     # Create a symlink to source at target (default is $HOME)
     # args: source [target_file]
-    test $VERBOSE -gt 2 && printf "Linking %s\n" "$*"
+    vprintf 2 "Linking %s\n" "$*"
     check_source "$@"
     if [ -z "${SOURCE}" ]; then
         return 1
@@ -104,17 +112,17 @@ link_if_not_present () {
         LINK_PATH=${RESULT_PATH}
     fi
 
-    test $VERBOSE -gt 2 && printf "... linking to %s if %s not present\n" "${SOURCE}" "${LINK_PATH}"
+    vprintf 2 "... linking to %s if %s not present\n" "${SOURCE}" "${LINK_PATH}"
     if [ ! -e "${LINK_PATH}" ] && [ ! -L "${LINK_PATH}" ]; then
-        test $VERBOSE -gt 0 && echo "... creating ${LINK_PATH} symlink"
+        vprintf 0 "... creating %s symlink\n" "${LINK_PATH}"
         maybe ln -s "${SOURCE}" "${LINK_PATH}"
     elif [ -L "${LINK_PATH}" ]; then
         if [ "$(readlink "${LINK_PATH}")" != "${SOURCE}" ]; then
-            test $VERBOSE -gt 0 && echo "... replacing ${LINK_PATH} symlink"
+            vprintf 0 "... replacing %s symlink\n" "${LINK_PATH}"
             maybe rm "${LINK_PATH}"
             maybe ln -s "${SOURCE}" "${LINK_PATH}"
         else
-            test $VERBOSE -gt 1 && echo "... not replacing identical ${LINK_PATH} symlink"
+            vprintf 1 "... not replacing identical %s symlink" "${LINK_PATH}"
         fi
     else
         printf "\nWARNING: %s exists as file/directory; skipping\n" "${SOURCE}"
@@ -127,13 +135,13 @@ copy_source_to_dest() {
     [[ $DEBUG -gt 1 ]] && trace "$LINENO" "${BASH_LINENO[@]}"
     local SOURCE="$1"
     local DEST="$2"
-    test $VERBOSE -gt 0 && echo "Copying ${SOURCE} to ${DEST}"
+    vprintf 0 "Copying %s to %s\n" "${SOURCE}" "${DEST}"
     [[ "$DEBUG" -gt 1 ]] && trap "set +x" RETURN && set -x
     if [ -e "${SOURCE}/.git" ]; then
-        test $VERBOSE -gt 0 && echo "exporting ${SOURCE} git archive to $DEST"
+        vprintf 0 "exporting %s git archive to %s\n" "${SOURCE}" "$DEST"
         (maybe cd "$SOURCE" && maybe git archive --format=tar ) | (maybe cd "$DEST" && maybe tar xf -)
     else
-        test $VERBOSE -gt 0 && echo "recursively copying ${SOURCE} into ${DEST}"
+        vprintf 0 "recursively copying %s into %s\n" $"${SOURCE}" "${DEST}"
         maybe cp -Ri "${SOURCE}" "${DEST}"
     fi
 }
@@ -145,7 +153,7 @@ copy_if_not_present_to_dir () {
     # This handles the few critical files where a symlink might not work due to
     # the symlink target filesystem being inaccessible.
 
-    test $VERBOSE -gt 2 && printf "Copying %s\n" "$*"
+    vprintf 2 "Copying %s\n" "$*"
     check_source "$@"
     if [ -z "${SOURCE}" ]; then
         return
@@ -157,19 +165,19 @@ copy_if_not_present_to_dir () {
         DEST_PATH="${DEST_PATH}/${SOURCE##*/}"
     fi
 
-    [[ $VERBOSE -gt 2 || $DEBUG -gt 1 ]] && printf "  copying %s if not present in %s\n" "${SOURCE}" "${DEST_PATH}"
+    vprintf 2 "  copying %s if not present in %s\n" "${SOURCE}" "${DEST_PATH}"
     if [ -d "${SOURCE}" ] && [ ! -e "${DEST_PATH}" ]; then
         copy_source_to_dest "$SOURCE" "$DEST_PATH"
     elif [ ! -e "${DEST_PATH}" ] && [ ! -L "${DEST_PATH}" ] || [ -d "${DEST_PATH}" ]; then
         if [ ! -d "$DEST_PATH" ] && cmp -s "$SOURCE" "$DEST_PATH" ; then
-            test $VERBOSE -gt 1 && echo "... not copying ${SOURCE} to unchanged ${DEST_PATH}"
+            vprintf 1 "... not copying %s to unchanged %s\n" "${SOURCE}" "${DEST_PATH}"
         else
             [[ -e "${DEST_PATH}" && ! -w "${DEST_PATH}" ]] && maybe chmod u+w "${DEST_PATH}"  # Undo protection below
             copy_source_to_dest "${SOURCE}" "${DEST_PATH}"
             maybe chmod u-w "${DEST_PATH}"  # Make it harder for me to edit single files copied
         fi
     elif [ -L "${DEST_PATH}" ]; then
-        test $VERBOSE -gt 0 && echo "...  replacing ${DEST_PATH} symlink with copy"
+        vprintf 0 "...  replacing %s symlink with copy\n" "${DEST_PATH}"
         [ ! -w "${DEST_PATH}" ] && maybe chmod u+w "${DEST_PATH}"  # Undo protection below
         maybe rm "${DEST_PATH}"
         maybe cp "${SOURCE}" "${DEST_PATH}"
@@ -182,7 +190,7 @@ copy_if_not_present_to_dir () {
 }
 
 shell_init_files () {
-    test $VERBOSE -gt 1 && printf "Initializing shell configuration\n\n"
+    vprintf 1 "Initializing shell configuration\n\n"
 
     case "${OS}" in
         (Darwin)
@@ -205,16 +213,16 @@ shell_init_files () {
 }
 
 app_rcfiles () {
-    test $VERBOSE -gt 1 && printf "\nInitializing rc files\n\n"
-    mkdir -p "${HOME}/.config/bat"
-    link_if_not_present "${DOT_PATH}/bat.config" "${HOME}/.config/bat/config"
-    mkdir -p "${HOME}/.config/cheat"
-    link_if_not_present "${DOT_PATH}/cheat.yml" "${HOME}/.config/cheat/conf.yml"
-    mkdir -p "${HOME}/.config/direnv"
-    link_if_not_present "${DOT_PATH}/direnvrc" "${HOME}/.config/direnv/direnvrc"
+    vprintf 1 "\nInitializing rc files\n\n"
+    mkdir -p "${CONFIGS}/bat"
+    link_if_not_present "${DOT_PATH}/bat.config" "${CONFIGS}/bat/config"
+    mkdir -p "${CONFIGS}/cheat"
+    link_if_not_present "${DOT_PATH}/cheat.yml" "${CONFIGS}/cheat/conf.yml"
+    mkdir -p "${CONFIGS}/direnv"
+    link_if_not_present "${DOT_PATH}/direnvrc" "${CONFIGS}/direnv/direnvrc"
     # wezterm's nice but Terminal is sufficient again
-    #mkdir -p "${HOME}/.config/wezterm"
-    #link_if_not_present "${DOT_PATH}/wezterm.lua" "${HOME}/.config/wezterm/wezterm.lua"
+    #mkdir -p "${CONFIGS}/wezterm"
+    #link_if_not_present "${DOT_PATH}/wezterm.lua" "${CONFIGS}/wezterm/wezterm.lua"
     link_if_not_present "${EMACS_PATH}" "${HOME}/.emacs.d"
     link_if_not_present "${DOT_PATH}/.digrc"
     link_if_not_present "${DOT_PATH}/.editorconfig"
@@ -228,7 +236,7 @@ app_rcfiles () {
 }
 
 developer_apps () {
-    test $VERBOSE -gt 1 && printf "\nInitializing developer files\n\n"
+    vprintf 1 "\nInitializing developer files\n\n"
     if [ "$INIT_JAVA" -gt 0 ]; then
         copy_if_not_present_to_dir "${DOT_PATH}/.gradle" "${GRADLE_PATH}"
         link_if_not_present "${GRADLE_PATH}" "${HOME}/.gradle"
@@ -242,14 +250,14 @@ developer_apps () {
 }
 
 os_specific () {
-    test $VERBOSE -gt 1 && printf "\nMaking %s specific links\n\n" "$OS"
+    vprintf 1 "\nMaking %s specific links\n\n" "$OS"
 
     case "${OS}" in
         (Darwin)
             copy_if_not_present_to_dir "${DOT_PATH}/Justfile" "${HOME}"
             copy_if_not_present_to_dir "${DOT_PATH}/login_actions.sh" "${HOME}"
             link_if_not_present "${DOT_PATH}/.gitconfig-macos"
-            link_if_not_present "${DOT_PATH}/.logrc"
+            #link_if_not_present "${DOT_PATH}/.logrc"
             # also link editorconfig at root of CM volume
             link_if_not_present "${DOT_PATH}/.editorconfig" "${CM_ROOT}/.editorconfig"
             ;;
@@ -279,6 +287,7 @@ install () {
     [[ -e "$TMP_DIR" ]] && {
         printf "Fake results created in %s\n" "$TMP_DIR"
     }
+    return 0
 }
 
 while getopts "dhnsv?" optionName; do
