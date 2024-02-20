@@ -1,0 +1,63 @@
+# Project artifacts
+.env
+tmp
+.direnv
+.envrc
+*.log
+*.pid
+
+# VCS artifacts
+.svn*
+
+# Emacs / vi
+.#*
+*~
+.dir-locals.el
+*.swp
+*.swo
+
+# Idea artifacts
+.idea*
+*.eml
+*.iws
+*.iml
+*.ipr
+
+# Eclipse artifacts
+.settings*
+
+# Maven artifacts
+target/
+
+# Python
+*.pyc
+.python-version
+.coverage
+htmlcov/
+.files.dat
+
+# SonarQube
+.scannerwork/
+
+# Mac:
+
+.DS_Store
+.AppleDouble
+.LSOverride
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes/
+.TemporaryItems/
+.DocumentRevisions-V100/

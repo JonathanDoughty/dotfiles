@@ -1,0 +1,50 @@
+# ~/.gitconfig-macos
+# macOS specific git tool configuration
+
+# Try to address `hugo mod` defaulting to https
+[url "ssh://diskstation.rhapsody.net/"]
+    insteadOf = https://diskstation.rhapsody.net/
+
+# prefer delta from homebrew's git-delta
+[core]
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    features = side-by-side line-numbers decorations
+    whitespace-error-style = 22 reverse
+    navigate = true
+[delta "decorations"]
+    commit-decoration-style = bold yellow box ul
+    file-style = bold yellow ul
+    file-decoration-style = none
+
+[diff]
+    colorMoved = default
+
+#    tool = p4merge
+# Below needs the above?
+
+[difftool "p4merge"]
+    cmd = ~/Applications/p4merge.app/Contents/MacOS/p4merge "$LOCAL" "$REMOTE"
+    trustExitCode = false
+[difftool "vscode"]
+    cmd = "code --wait --diff  $LOCAL $REMOTE"
+[difftool "sourcetree"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+    trustExitCode = true
+[mergetool "vscode"]
+    cmd = code --wait $MERGED
+[mergetool "sourcetree"]
+    cmd = code --wait $MERGED
+    trustExitCode = true
+
+[log]
+    mailmap = true
+[mailmap]
+    file = ~/.git_mailmap
+
+[credential]
+    helper = osxkeychain

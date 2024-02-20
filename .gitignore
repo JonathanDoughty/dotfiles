@@ -1,0 +1,13 @@
+# .gitignore for dotfiles
+*.pyc
+XResources/*[^\.]
+# Maven
+settings.xml
+archetype-catalog.xml
+.m2/repository
+.m2/wrapper
+# Zsh
+.zsh_history
+zsh/examples/
+zsh/.zcompdump
+zsh/.zsh_sessions

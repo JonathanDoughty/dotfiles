@@ -1,0 +1,34 @@
+#!/bin/sh
+# Extend/implement minimal less(1) input processor
+#
+case "$1" in
+    (*.extension) # left as a reminder
+        extension-handler "$1"
+        ;;
+    (*)
+        if type lesspipe > /dev/null 2>&1 ; then
+            : # Let (Linux) standard lesspipe handle
+        else
+            # On, e.g., OS X less is less
+            case "$1" in
+                # yak shave, adapt:
+                # https://github.com/suriya/dot-files/blob/master/lessfilter
+                # See also
+                # https://stackoverflow.com/questions/33904487/using-lessfilter
+                (*.Z) uncompress -c $1  2>/dev/null
+                      ;;
+                (*.gz) gzcat $1  2>/dev/null
+                       ;;
+                (*)
+                    # Colorize the rest
+                    if type -t bat >/dev/null 2>&1 ; then
+                        bat --color always --decorations always "$1"
+                    fi
+                    exit 0
+            esac
+        fi
+        ;;
+esac
+
+# No further processing by lesspipe necessary
+exit 0

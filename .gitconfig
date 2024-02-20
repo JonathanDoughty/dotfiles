@@ -1,0 +1,124 @@
+# ~/.gitconfig                                                 -*- Gitconfig -*-
+
+[include]
+    path = ~/.gituser
+
+# Whether this is in my main CM collection
+[includeIf "gitdir:/Volumes/CM/"]
+    path = ~/.gitconfig-macos
+# or my home directory
+[includeIf "gitdir:/Users/"]
+    path = ~/.gitconfig-macos
+# or on NAS
+[includeIf "gitdir:/var/services/homes/"]
+    path = ~/.gitconfig-synology
+
+[init]
+    defaultBranch = main
+
+[branch]
+	autoSetupRebase = always
+
+[fetch]
+    prune = true
+    pruneTags = true
+
+[diff]
+    mnemonicprefix = true # index, work tree, commit, object instead of a,b
+
+[difftool]
+    # Clean up backup files created on tool exit
+    keepBackup = false
+    # Clean up temp files created on tool exit
+    keepTemporaries = false
+    # Put the temp files in a dedicated dir anyway
+    writeToTemp = true
+    # Auto-accept file prompts when launching
+    prompt = true
+
+[merge]
+    verbosity = 0
+    stat = true # always show diffstat at end of merge
+	ff = only # no extra commit when merging
+[mergetool]
+    # Clean up backup files created by merge tools on tool exit
+    keepBackup = false
+    # Clean up temp files created by merge tools on tool exit
+    keepTemporaries = false
+    # Put the temp files in a dedicated dir anyway
+    writeToTemp = true
+    # Auto-accept file prompts when launching merge tools
+    prompt = true
+
+[pull]
+    rebase = merges
+[rebase]
+    autoStash = true
+    autoSquash = true
+	updateRefs = true
+[push]
+    default = simple
+	autoSetupRemote = true
+	useForceIfIncludes = true
+[core]
+    excludesfile = ~/.gitignore_global
+    whitespace = trailing-space,space-before-tab
+    safecrlf = warn
+    # added for akela
+    autocrlf = input
+    #autocrlf - doesn't work the way you think, safecrlf seems to be better
+[pager]
+    branch = false
+[color]
+    ui = auto
+
+# Enable  Reuse Recorded Resolution
+[rerere]
+	enabled = true
+	autoupdate = true
+
+# Various crutches
+[alias]
+    alias = ! git config --get-regexp ^alias\\. | cut -c 7- # list aliases
+    addm = ! git ls-files -mz | xargs -0 git add # stage modified
+    addu = ! git ls-files -z --others --exclude-standard | xargs -0 git add # stage unknown
+    br = branch
+    ca = commit --amend
+    cm = commit -m              # commit modified
+    co = checkout
+    ch = checkout
+    # primary (most likely) branch name
+    # https://stackoverflow.com/a/70080259/1124740
+    default-branch = "!git branch --sort=-refname | grep -o -m1 '\\b\\(main\\|master\\|dev\\)\\b' || echo 'unknown_branch'"
+    fl = log -u  # file log - diff of changes to file
+    st = status -s -b # short status with current branch
+    undo = checkout HEAD --
+    undoall = ! git checkout HEAD -- $(git ls -m)
+    d = diff
+    dfm = "!git diff $(git default-branch) --" # differences from primary to current branch
+    dfs = "!git diff --stat $(git default-branch)..HEAD" # files changed vs default branch
+    dlast = diff HEAD^ HEAD # what just changed?
+    ds = diff --staged # differences staged vs current branch
+    # My generally preferred log detail
+    # Show diffs between branches: usage git ld branch1..branch2
+    # Colors are 8-bit https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
+    # Similar with wrapping, standard color names, subject and non-empty body, short author email
+    ld = !git --no-pager log --graph --abbrev-commit --date=relative \
+    --pretty=tformat:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' -n 25
+    # My old preferred, with ansi color codes and lacking author info
+    ldo = log --graph --abbrev-commit --date=relative \
+    --pretty=format:'%C(204)%h%Creset -%C(214)%d%Creset %s %C(48)(%cr)%Creset'
+    lpd = log -p # show patches diff style
+    ls = ls-files # list files git managed
+    lsu = ls-files --others --exclude-standard # List untracked files; add via: g addu
+    lsi = ls-files -o -i --exclude-standard    # List files ignored by git:
+    lr = ! git status -s \
+      && git --no-pager log --since='3 days ago' --graph --abbrev-commit --date=relative \
+          --pretty=format:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' # list recent commits
+    puff = pull --no-ff  # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
+    pufl = push --force-with-lease  # update remote branch that has been locally rebased
+    rv = remote -v # list remotes
+    sw = switch
+    # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
+    wip = !git add -u && git commit -m "WIP"  # save all changes as work-in-progress
+    wipe = !git add -A && git commit -qm 'WIPE SAVEPOINT' && git reset HEAD~1 --hard # undo saved work-in-progress

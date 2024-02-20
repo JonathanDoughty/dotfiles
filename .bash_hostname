@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# .bash_$(uname -n) - host specific startup
+
+:  # Add host specific startup logic here

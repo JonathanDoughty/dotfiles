@@ -1,0 +1,16 @@
+#!/bin/bash
+# bash initializations for Synology
+
+SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")"
+# shellcheck disable=SC1090
+test -f "${SAME_DIR}/git-completion.bash" && . "$_"
+unset SAME_DIR
+
+test -f ~/.dircolors && eval "$(dircolors "$_" )"  # colored output is too hard to read otherwise
+
+# powerline's git integration used to get confused; community git works
+#export POWERLINE_GIT=0
+
+# System default HOSTNAME is not fqdn, make it so
+HOSTNAME=$(nslookup "$(hostname)" | awk '/Name:/ { print $2 }')
+export HOSTNAME
