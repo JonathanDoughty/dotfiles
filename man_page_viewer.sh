@@ -24,7 +24,7 @@ set_manpath() {
     if [[ -n "$ZSH_VERSION" ]]; then
         emulate -L bash
     else
-        # bash's tra works differently
+        # bash's trap works differently
         [[ "$VERBOSE" -gt 1 ]] && trap "set +x" RETURN && set -x
     fi
 
@@ -87,20 +87,23 @@ set_manpath() {
 
 help() {
     if type bat 1>/dev/null 2>&1 ; then
-        "$@" --help 2>&1 | bat --plain --language=help
+        "$@" --help 2>&1 | bat --language=help
     else
         "$@" --help 2>&1 | more
     fi
 }
 
 man() {
-    # Insure MANPATH is sane before invoking standard man
+    # Insure MANPATH is sane before invoking man page viewer
     [[ -n "${ORIGINAL_MANPATH}" ]] || set_manpath
     # If bat has been installed, use for its extra man colorizing
     if type bat 1>/dev/null 2>&1 && [[ -z "$MANPAGER" ]]; then
-        export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+        export MANPAGER="sh -c 'col -bx | bat --language=man'"
     fi
     command man "$@"
+    if [[ $? ]]; then
+        help "$@"
+    fi
 }
 
 mman() {
@@ -144,12 +147,12 @@ mman() {
 
     case ${OS} in
         (Darwin)
-            if [ -e /Applications/Dash.app ]; then
+            if [[ -e /Applications/Dash.app || -e ~/Applications/Dash.app ]]; then
                 _dash "$@"
             else
                 # Use native Postscript generation, piping that to Preview
                 # though since Postscript was removed in Sonoma ... - see Notes on Dash
-                man -t "$@" | open -f -a Preview
+                command man -t "$@" | open -f -a Preview
             fi
             ;;
         (Linux)
