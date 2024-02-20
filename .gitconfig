@@ -19,12 +19,15 @@
 [branch]
 	autoSetupRebase = always
 
+[commit]
+    verbose = true              # whole commit diff in message
 [fetch]
     prune = true
     pruneTags = true
 
 [diff]
     mnemonicprefix = true # index, work tree, commit, object instead of a,b
+    algorithm = histogram # better visualization of diffs
 
 [difftool]
     # Clean up backup files created on tool exit
@@ -40,6 +43,7 @@
     verbosity = 0
     stat = true # always show diffstat at end of merge
 	ff = only # no extra commit when merging
+    conflictstyle = zdiff3  # provide extra context info
 [mergetool]
     # Clean up backup files created by merge tools on tool exit
     keepBackup = false
@@ -51,13 +55,14 @@
     prompt = true
 
 [pull]
-    rebase = merges
+    rebase = true # like git pull --rebase every time you git pull
+    # was rebase = merges
 [rebase]
     autoStash = true
     autoSquash = true
 	updateRefs = true
 [push]
-    default = simple
+    default = current
 	autoSetupRemote = true
 	useForceIfIncludes = true
 [core]
@@ -115,8 +120,8 @@
     lr = ! git status -s \
       && git --no-pager log --since='3 days ago' --graph --abbrev-commit --date=relative \
           --pretty=format:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' # list recent commits
-    puff = pull --no-ff  # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
-    pufl = push --force-with-lease  # update remote branch that has been locally rebased
+    plnff = pull --no-ff # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
+    plfl = push --force-with-lease  # update remote branch that has been locally rebased
     rv = remote -v # list remotes
     sw = switch
     # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
