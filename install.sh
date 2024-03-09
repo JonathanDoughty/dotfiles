@@ -6,18 +6,24 @@ usage () {
         cat <<EOF
 ${0##*/} - create symbolic links to/copy configuration managed dot files
 
--? -h     - This help
--d        - Debug by creating missing links and copies in /tmp/$PPID, not $HOME
--n        - Do a dry run: print what would be linked or copied
--s        - skip sourcing ${CONTROLLED}
--v        - Be verbose, repeated -v arguments add verbosity:
-            1: terse, 2: chatty, 3: report intent, 4: expand commands on execution
+-d      - Debug creating links and copies in default /tmp/$PPID, not $HOME
+-n      - Dry run: print what would be linked or copied
+-s      - Skip sourcing ${CUSTOM}
+-v      - Be verbose, repeated -v arguments add verbosity:
+          1: terse 2: chatty 3: report intent 4: expand commands on execution
+-? -h   - This help
 
-If ${CONTROLLED} exists it is sourced to create symbolic links to controlled access files that
-might have sensitive contents. Borrowers don't have a need to know the details of that.
+If ${CUSTOM} exists it is sourced after the
+remaining set up has completed.
 
-Note that a minority of files get copied to their destination rather than symlinked. That's
-because, for me, the filesystem these live on is not always available when I first log in.
+The custom script can, e.g., create symbolic links to controlled access files
+having sensitive contents not to be included here using any of the functions
+defined here. As an example I use that to set up my ~/.ssh contents.
+
+Note that a minority of files get copied to their destination rather than
+symlinked. For some, on macOS the filesystem these live on is not always
+available when I first log in. Others are directory hierarchies I want to
+re-create.
 
 EOF
         exit
@@ -32,11 +38,11 @@ HOSTNAME=${HOSTNAME%%[-]*}      # strip off any multi-interface name components
 DOT_PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"  # This directory
 CONFIGS="${HOME}/.config"
 CACHE_PATH="${HOME}/Downloads"
-CM_ROOT=/Volumes/CM             # Currently used only for .editorconfig
+CM_ROOT=$(dirname "${CM_DIR}")
 EMACS_PATH="${HOME}/CM/emacs"
 MAVEN_PATH="${CACHE_PATH}/MavenRepository"
 GRADLE_PATH="${CACHE_PATH}/Gradle"
-CONTROLLED="install-controlled.sh"
+CUSTOM="${CUSTOM:-/path/to/custom_installation_script}"
 INIT_DB=0                       # Skip database related unless > 0
 INIT_JAVA=0                     # Skip Java related unless > 0
 INIT_PYTHON=1                   # Skip python related unless > 0
@@ -61,18 +67,18 @@ trace() {
 
 vprintf () {
     local level=$1; shift
-    local fmt=$2; shift
+    local fmt=$1; shift
     # shellcheck disable=SC2059 # the point is to pass in fmt
-    [[ $VERBOSE -gt $level ]] && printf "$fmt" "$@"
+    [[ $VERBOSE -ge $level ]] && printf "$fmt" "$@" && printf "\n"
 }
 
 check_source () {
     # Check if source exists and return corresponding result path
-    vprintf 1 "\nChecking args 1:%s 2:%s\n" "$1" "$2"
+    vprintf 3 "Checking args 1:%s 2:%s" "$1" "$2"
     [[ $DEBUG -gt 1 ]] && trace "$LINENO" "${BASH_LINENO[@]}"
     SOURCE=$1
     if [ ! -e "${SOURCE}" ]; then
-        vprintf 1 "\nWARNING: %s does not exist, skipping\n" "${SOURCE}"
+        vprintf 1 "WARNING: %s does not exist, skipping" "${SOURCE}"
         SOURCE=
         return
     fi
@@ -86,46 +92,51 @@ check_source () {
     if [[ $DEBUG -gt 0 ]]; then
         RESULT_PATH="${TMP_DIR}${RESULT_PATH}"
         if [[ ! -d "${RESULT_PATH%/*}" ]]; then
-            mkdir -p "${RESULT_PATH%/*}" # insure fake directory hierarchy
+            mkdir -p "${RESULT_PATH%/*}" # insure debug directory hierarchy
         fi
     fi
 }
 
 maybe () {
     local cmd=( "$@" )
-    [[ $DRY_RUN -gt 0 ]] && vprintf 1 "%s\n" "${cmd[*]}"
     if [[ $DRY_RUN -eq 0 ]]; then
+        vprintf 3 "%s" "${cmd[*]}"
         eval "${cmd[*]}"
+    else
+        vprintf 0 "%s" "${cmd[*]}"
     fi
 }
 
 link_if_not_present () {
     # Create a symlink to source at target (default is $HOME)
     # args: source [target_file]
-    vprintf 2 "Linking %s\n" "$*"
+    vprintf 2 "Linking %s" "$*"
     check_source "$@"
     if [ -z "${SOURCE}" ]; then
         return 1
     else
-        # yakshave: make the required hierarchy here and clean up the extraneous mkdir
-        #[[ -e "$(dirname "$RESULT_PATH")" ]] || mkdir -p "$(dirname "$RESULT_PATH")"
+        if [[ ! -e "$(dirname "$RESULT_PATH")" ]]; then
+            # Make the required hierarchy or return if permission denied
+            # Should this be part of check_source's debug RESULT_PATH assurance?
+            mkdir -p "$(dirname "$RESULT_PATH")" || return 1
+        fi
         LINK_PATH=${RESULT_PATH}
     fi
 
-    vprintf 2 "... linking to %s if %s not present\n" "${SOURCE}" "${LINK_PATH}"
+    vprintf 3 "Linking to %s if %s not present" "${SOURCE}" "${LINK_PATH}"
     if [ ! -e "${LINK_PATH}" ] && [ ! -L "${LINK_PATH}" ]; then
-        vprintf 0 "... creating %s symlink\n" "${LINK_PATH}"
+        vprintf 1 "Creating %s symlink" "${LINK_PATH}"
         maybe ln -s "${SOURCE}" "${LINK_PATH}"
     elif [ -L "${LINK_PATH}" ]; then
         if [ "$(readlink "${LINK_PATH}")" != "${SOURCE}" ]; then
-            vprintf 0 "... replacing %s symlink\n" "${LINK_PATH}"
+            vprintf 1 "Replacing %s symlink" "${LINK_PATH}"
             maybe rm "${LINK_PATH}"
             maybe ln -s "${SOURCE}" "${LINK_PATH}"
         else
-            vprintf 1 "... not replacing identical %s symlink" "${LINK_PATH}"
+            vprintf 1 "Not replacing identical %s symlink" "${LINK_PATH}"
         fi
     else
-        printf "\nWARNING: %s exists as file/directory; skipping\n" "${SOURCE}"
+        vprintf 0 "WARNING: %s exists as file/directory; skipping" "${SOURCE}"
         return 1
     fi
 }
@@ -135,13 +146,14 @@ copy_source_to_dest() {
     [[ $DEBUG -gt 1 ]] && trace "$LINENO" "${BASH_LINENO[@]}"
     local SOURCE="$1"
     local DEST="$2"
-    vprintf 0 "Copying %s to %s\n" "${SOURCE}" "${DEST}"
+    vprintf 1 "Copying %s to %s" "${SOURCE}" "${DEST}"
     [[ "$DEBUG" -gt 1 ]] && trap "set +x" RETURN && set -x
     if [ -e "${SOURCE}/.git" ]; then
-        vprintf 0 "exporting %s git archive to %s\n" "${SOURCE}" "$DEST"
-        (maybe cd "$SOURCE" && maybe git archive --format=tar ) | (maybe cd "$DEST" && maybe tar xf -)
+        vprintf 1 "Exporting %s git archive to %s" "${SOURCE}" "$DEST"
+        (maybe cd "$SOURCE" && maybe git archive --format=tar ) | \
+            (maybe cd "$DEST" && maybe tar xf -)
     else
-        vprintf 0 "recursively copying %s into %s\n" $"${SOURCE}" "${DEST}"
+        vprintf 1 "Recursively copying %s into %s" $"${SOURCE}" "${DEST}"
         maybe cp -Ri "${SOURCE}" "${DEST}"
     fi
 }
@@ -153,7 +165,7 @@ copy_if_not_present_to_dir () {
     # This handles the few critical files where a symlink might not work due to
     # the symlink target filesystem being inaccessible.
 
-    vprintf 2 "Copying %s\n" "$*"
+    vprintf 2 "Copying %s" "$*"
     check_source "$@"
     if [ -z "${SOURCE}" ]; then
         return
@@ -165,19 +177,19 @@ copy_if_not_present_to_dir () {
         DEST_PATH="${DEST_PATH}/${SOURCE##*/}"
     fi
 
-    vprintf 2 "  copying %s if not present in %s\n" "${SOURCE}" "${DEST_PATH}"
+    vprintf 3 "Copying %s if not present in %s" "${SOURCE}" "${DEST_PATH}"
     if [ -d "${SOURCE}" ] && [ ! -e "${DEST_PATH}" ]; then
         copy_source_to_dest "$SOURCE" "$DEST_PATH"
     elif [ ! -e "${DEST_PATH}" ] && [ ! -L "${DEST_PATH}" ] || [ -d "${DEST_PATH}" ]; then
         if [ ! -d "$DEST_PATH" ] && cmp -s "$SOURCE" "$DEST_PATH" ; then
-            vprintf 1 "... not copying %s to unchanged %s\n" "${SOURCE}" "${DEST_PATH}"
+            vprintf 1 "Not copying %s to unchanged %s" "${SOURCE}" "${DEST_PATH}"
         else
             [[ -e "${DEST_PATH}" && ! -w "${DEST_PATH}" ]] && maybe chmod u+w "${DEST_PATH}"  # Undo protection below
             copy_source_to_dest "${SOURCE}" "${DEST_PATH}"
             maybe chmod u-w "${DEST_PATH}"  # Make it harder for me to edit single files copied
         fi
     elif [ -L "${DEST_PATH}" ]; then
-        vprintf 0 "...  replacing %s symlink with copy\n" "${DEST_PATH}"
+        vprintf 1 "Replacing %s symlink with copy" "${DEST_PATH}"
         [ ! -w "${DEST_PATH}" ] && maybe chmod u+w "${DEST_PATH}"  # Undo protection below
         maybe rm "${DEST_PATH}"
         maybe cp "${SOURCE}" "${DEST_PATH}"
@@ -190,7 +202,7 @@ copy_if_not_present_to_dir () {
 }
 
 shell_init_files () {
-    vprintf 1 "Initializing shell configuration\n\n"
+    vprintf 1 "Initializing shell configuration"
 
     case "${OS}" in
         (Darwin)
@@ -213,7 +225,7 @@ shell_init_files () {
 }
 
 app_rcfiles () {
-    vprintf 1 "\nInitializing rc files\n\n"
+    vprintf 1 "Initializing rc files"
     mkdir -p "${CONFIGS}/bat"
     link_if_not_present "${DOT_PATH}/bat.config" "${CONFIGS}/bat/config"
     mkdir -p "${CONFIGS}/cheat"
@@ -236,7 +248,7 @@ app_rcfiles () {
 }
 
 developer_apps () {
-    vprintf 1 "\nInitializing developer files\n\n"
+    vprintf 1 "Initializing developer files"
     if [ "$INIT_JAVA" -gt 0 ]; then
         copy_if_not_present_to_dir "${DOT_PATH}/.gradle" "${GRADLE_PATH}"
         link_if_not_present "${GRADLE_PATH}" "${HOME}/.gradle"
@@ -250,7 +262,7 @@ developer_apps () {
 }
 
 os_specific () {
-    vprintf 1 "\nMaking %s specific links\n\n" "$OS"
+    vprintf 1 "Making %s specific links" "$OS"
 
     case "${OS}" in
         (Darwin)
@@ -275,17 +287,17 @@ install () {
     app_rcfiles                 # Followed by other rc files
     developer_apps              # Developer set up
     os_specific                 # Those that vary slightly by OS
-    if [[ -e "$CONTROLLED" ]]; then
+    if [[ -e "$CUSTOM" ]]; then
         if [[ "$SKIP_SENSITIVE" -eq 0 ]]; then
-            printf "Sourcing %s\n" "$CONTROLLED"
+            vprintf 1 "Sourcing %s" "$CUSTOM"
             # shellcheck disable=SC1090
-            ( . "$CONTROLLED" )
+            ( . "$CUSTOM" )
         else
-            printf "Skipping %s\n" "$CONTROLLED"
+            vprintf 0 "Skipping %s" "$CUSTOM"
         fi
     fi
     [[ -e "$TMP_DIR" ]] && {
-        printf "Fake results created in %s\n" "$TMP_DIR"
+        vprintf 0 "Debug results created in %s" "$TMP_DIR"
     }
     return 0
 }
