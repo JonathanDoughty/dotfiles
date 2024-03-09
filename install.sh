@@ -38,6 +38,7 @@ HOSTNAME=${HOSTNAME%%[-]*}      # strip off any multi-interface name components
 DOT_PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"  # This directory
 CONFIGS="${HOME}/.config"
 CACHE_PATH="${HOME}/Downloads"
+CM_DIR=${CM_DIR:-${DOT_PATH}}   # from environment or this directory
 CM_ROOT=$(dirname "${CM_DIR}")
 EMACS_PATH="${HOME}/CM/emacs"
 MAVEN_PATH="${CACHE_PATH}/MavenRepository"
