@@ -14,6 +14,19 @@ if [[ $PROMPT_COMMAND =~ (.*)(; *update_terminal_cwd *| *update_terminal_cwd *; 
     PROMPT_COMMAND="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
 fi
 
+# Provide a function to dismount my CM sparsebundle
+# See login_actions.sh
+dismount_cm () {
+    local pids
+    declare -i p
+    # Signal processes (other than this one) accessing sparse bundle
+    pids=$(lsof "$sparse_volume" | awk 'NR>1 {print $2}' | grep -v $$ | sort -u)
+    for p in $pids; do
+        kill "$p"
+    done
+    diskutil eject "$sparse_volume"
+}
+
 # Check config files that are copied
 _COPIED=( ~/CM/dotfiles/.bash_profile ~/CM/dotfiles/login_actions.sh )
 # let me know on login when any of these are out of sync
