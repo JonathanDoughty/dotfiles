@@ -88,7 +88,7 @@ ssh_identities () {
                 /usr/bin/ssh-add -q --apple-load-keychain --apple-use-keychain
             )
             [ $verbose -gt 0 ] && \
-                printf "The following identities are available to ssh agent %s\n" "$SSH_AUTH_SOCK"
+                printf "The following identities are available to ssh agent %s\n" "${SSH_AUTH_SOCK##*/}"
         else
             [ $verbose -gt 0 ] && \
                 printf "ssh identities already added\n"
@@ -106,7 +106,7 @@ start_hammerspoon () {
         local id app
         # Look for the application
         id=$(osascript -e "id of application \"$crutch\"" 2>/dev/null)
-        app="$(osascript -e "tell application \"Finder\" to POSIX path of (get application file id \"$id\" as alias)")"
+        app="$(osascript -e "tell application \"Finder\" to POSIX path of (get application file id \"$id\" as alias)" 2>/dev/null)"
         if [[ -n "$app" ]]; then
             open -a "$app" && [ $verbose -gt 0 ] && \
                 printf "Started %s\n" "$crutch"
@@ -119,7 +119,10 @@ start_hammerspoon () {
 }
 
 start_notebooks () {
-    (cd ~/TW && just open && [ $verbose -gt 0 ] && printf "Started Notes\n")
+    (
+        builtin cd ~/TW || exit
+        just open && [ $verbose -gt 0 ] && printf "Started Notes\n"
+    )
 
     case "$(uname -n)" in
         (WorkLaptop*)
