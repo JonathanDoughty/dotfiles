@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # .bash_Darwin - macOS specific login items
 
+CM_DIR="${CM_DIR:-/path/to/git/repo}"
+
 if [ -n "${ITERM_SESSION_ID}" ]; then
     # Use Apple's funky session saving / resume support
     # shellcheck source=/dev/null
@@ -28,7 +30,7 @@ dismount_cm () {
 }
 
 # Check config files that are copied
-_COPIED=( ~/CM/dotfiles/.bash_profile ~/CM/dotfiles/login_actions.sh )
+_COPIED=( "${CM_DIR}/.bash_profile" "${CM_DIR}/login_actions.sh" )
 # let me know on login when any of these are out of sync
 for __f in "${_COPIED[@]}"; do
     [ -f "$__f" ] && diff -q "$__f" "${BASH_SOURCE[0]%/*}/${__f##*/}"

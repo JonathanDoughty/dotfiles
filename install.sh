@@ -267,7 +267,6 @@ os_specific () {
 
     case "${OS}" in
         (Darwin)
-            copy_if_not_present_to_dir "${DOT_PATH}/Justfile" "${HOME}"
             copy_if_not_present_to_dir "${DOT_PATH}/login_actions.sh" "${HOME}"
             link_if_not_present "${DOT_PATH}/.gitconfig-macos"
             #link_if_not_present "${DOT_PATH}/.logrc"

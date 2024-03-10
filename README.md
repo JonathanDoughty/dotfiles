@@ -22,6 +22,10 @@ exist is not always available when I first log in. I prefer the symlink to git
 repo contents approach so that changes are easily tested by simply firing up a
 new shell.
 
+Some aspects of this depend on an environment variable - CM_DIR - that
+specifies the local path to this git repo. I depend a lot on
+[direnv](https://direnv.net/) for settings like that.
+
 ## Installation
 
 `install.sh` creates/updates the links and copies. I use it rather than one of the

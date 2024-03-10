@@ -4,10 +4,10 @@
 # This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
 # app which I run as a Login item
 
-# I create a 40GB case sensitive sparsebundle where most of git repos
-# and other work lives. See https://stackoverflow.com/a/12085233/1124740
+# I create a 40GB, Case sensitive, APFS sparsebundle where most of git repos
+# and other work lives. Why? See https://stackoverflow.com/a/12085233/1124740
 sparsebundle="${HOME}/CM.sparsebundle"
-sourcedir="${HOME}/CM/dotfiles"  # where the master copy of this lives
+sourcedir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives
 app_script="${HOME}/Applications/LogInScript.app/Contents/Resources/script"
 verbose=1
 log=
@@ -22,8 +22,8 @@ mount_cm () {
     # Check that my case sensitive sparsebundle, generally a separate login item, is accessible
     declare -i times delay=2
 
-    if [ ! -d "$sourcedir" ]; then
-        if [ -d "$sparsebundle" ]; then
+    if [[ ! -d "$sourcedir" ]]; then
+        if [[ -d "$sparsebundle" ]]; then
             [ $verbose -gt 0 ] && \
                 printf "Opening %s\n" "$sparsebundle"
             open "$sparsebundle"    # Get macOS to mount the sparsebundle as a volume
@@ -33,22 +33,22 @@ mount_cm () {
             exit 1
         fi
     else
-        [ $verbose -gt 0 ] && \
+        [[ $verbose -gt 0 ]] && \
             printf "%s is accessible\n" "$sourcedir"
         return 0
     fi
 
     # Wait for sparsebundle contents to appear
     for times in 10 9 8 7 6 5 4 3 2 1 0; do
-        if [ ! -d "$sourcedir" ]; then
-            [ $verbose -gt 1 ] && \
+        if [[ ! -d "$sourcedir" ]]; then
+            [[ $verbose -gt 1 ]] && \
                 printf "Waiting %s seconds for %s\n" $((times * delay)) "$sourcedir"
             sleep $delay
         else
             break
         fi
     done
-    if [ ! -d "$sourcedir" ]; then
+    if [[ ! -d "$sourcedir" ]]; then
         printf "%s not accessible, exiting\n" "$sourcedir"
         return 1
     fi
@@ -58,11 +58,28 @@ mount_cm () {
 check_scripts_sources () {
     # Let me know (in terminal where I can do something about it) if the CM'd version of this and
     # related scripts are out of sync.
-    if [ -n "$TERM_PROGRAM" ]; then
-        cmp "$sourcedir/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
-        cmp "$sourcedir/Justfile" "Justfile"
-        cmp "$app_script" "${BASH_SOURCE[0]}"
+    _compare_if_present () {
+        local src dest
+        src="$1"
+        dest="$2"
+        if [[ -e "$src" && -e "$dest" ]]; then
+            cmp "$src" "$dest"
+        fi
+    }
+    #trap "set +x" RETURN && set -x
+    if [[ -n "$TERM_PROGRAM" ]]; then
+        # We want this to run in the destination directory, not the source git repo
+        if [[ "$sourcedir" != "$(realpath "$(dirname "${BASH_SOURCE[0]}")")" ]] ; then
+            # This script
+            _compare_if_present "$sourcedir/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
+            _compare_if_present "$sourcedir/Justfile" "Justfile"
+            _compare_if_present "$sourcedir/.envrc" ".envrc"
+            _compare_if_present "$app_script" "${BASH_SOURCE[0]}"
+        else
+            printf "%s expects to run from %s not %s\n" "${BASH_SOURCE[0]}" "$HOME" "$PWD"
+        fi
     fi
+    unset -f _compare_if_present
 }
 
 # Initializations that depend on contents of the sparsebundle
@@ -120,7 +137,7 @@ start_hammerspoon () {
 
 start_notebooks () {
     (
-        builtin cd ~/TW || exit
+        builtin cd ~/TW 2>/dev/null || exit
         just open && [ $verbose -gt 0 ] && printf "Started Notes\n"
     )
 
