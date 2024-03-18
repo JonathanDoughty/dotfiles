@@ -2,7 +2,6 @@
 # bash-emacs - helpers for command line interaction with *the* editor
 
 if [ -n "$ZSH_VERSION" ]; then emulate -L ksh; fi
-[[ $_ != "$0" ]] || { echo "This file must be sourced to be useful."; exit 1; }
 
 function emc {
     # As suggested by http://emacsformacosx.com/tips
@@ -40,7 +39,8 @@ function emc {
                 sleep 2
             done
         fi
-        "$CLIENT" -s "$SOC" -n -a \"\" "$@"
+        # shellcheck disable=SC2068 # I want to send each array element
+        "$CLIENT" -s "$SOC" -n -a \"\" $@
     else
         printf "Can't find emacsclient to open %s\n" "$@"
     fi
@@ -50,3 +50,10 @@ function emr {
     # Open files read-only
     emc -e "(view-file \"$*\")"
 }
+
+case ${0##*/} in
+    (dash|-dash|bash|-bash|ksh|-ksh|sh|-sh|zsh|-zsh) ;; # being sourced to define functions only
+    (*)
+        # shellcheck disable=SC2068  # bare $@ is the point
+        emc $@ ;; # this file executed as a script? pass arguments to the emacsclient wrapper
+esac
