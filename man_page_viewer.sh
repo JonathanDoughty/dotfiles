@@ -85,7 +85,8 @@ set_manpath() {
     fi
 }
 
-help() {
+helpme() {                      # help is a bash builtin
+    # Use command's --help option (assuming it has one)
     if type bat 1>/dev/null 2>&1 ; then
         "$@" --help 2>&1 | bat --language=help
     else
@@ -94,15 +95,16 @@ help() {
 }
 
 man() {
-    # Insure MANPATH is sane before invoking man page viewer
+    # Insure MANPATH is sane before invoking terminal man pager
     [[ -n "${ORIGINAL_MANPATH}" ]] || set_manpath
-    # If bat has been installed, use for its extra man colorizing
+    # If bat has been installed, use its extra man colorizing
     if type bat 1>/dev/null 2>&1 && [[ -z "$MANPAGER" ]]; then
         export MANPAGER="sh -c 'col -bx | bat --language=man'"
     fi
     command man "$@"
+    # No man page? try help instead
     if [[ $? ]]; then
-        help "$@"
+        helpme "$@"
     fi
 }
 

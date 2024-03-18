@@ -9,14 +9,8 @@
 # Avoid some recent git dependence on less and friends
 # Works for diff, break log
 #export GIT_PAGER=cat
-if  command -v bat >/dev/null; then
-    more () { bat "$@"; }       # Long term muscle memory -> current modern tool
-    export PAGER=bat
-#elif  command -v moar >/dev/null; then # see https://github.com/walles/moar
-    :
-elif command -v less >/dev/null; then
-    export PAGER=less
-    more () { less "$@"; }      # the original, after all
+
+less_exports () {
     if command -v lesspipe >/dev/null; then
         eval "$(SHELL=/bin/sh lesspipe)"
     elif [ -f "${HOME}/.lessfilter" ]; then
@@ -27,9 +21,23 @@ elif command -v less >/dev/null; then
     # +Gg for large files
     export LESS="-F -R -s -M +Gg"
     export LESSHISTFILE=/dev/null
+}
+
+if  command -v bat >/dev/null; then
+    more () { bat "$@"; }       # Long term muscle memory -> current modern tool
+    export PAGER=bat
+    less_exports   # bat uses less for paging
+#elif  command -v moar >/dev/null; then # see https://github.com/walles/moar
+    :
+elif command -v less >/dev/null; then
+    export PAGER=less
+    more () { less "$@"; }      # the original, after all
+    less_exports
 else
     export PAGER=more
 fi
+
+unset -f less_exports
 
 command -v tput 1>/dev/null || return 1  # no tput on, e.g., Synology
 
