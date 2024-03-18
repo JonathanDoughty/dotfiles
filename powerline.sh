@@ -4,19 +4,20 @@
 # else, for bash, use adaptation of https://github.com/riobard/bash-powerline
 
 # Order matters, at least wrt bash and the -modules* lines
-_PLG_OPTS="
-        -mode patched -theme default -max-width 30
-        -shell autodetect
-        -cwd-mode fancy -cwd-max-depth 2
-        -modules host,ssh,cwd,perms,exit,shell-var
-        -modules-right venv,git,direnv
-        -hostname-only-if-ssh
-        -git-mode fancy
-        -path-aliases /Volumes/CM/Active=CM
-"
+_PLG_OPTIONS=(
+        "-mode patched -theme default -max-width 30"
+        "-shell-var _PS_SYMBOL"
+        "-cwd-mode fancy -cwd-max-depth 2"
+        "-modules host,ssh,cwd,perms,exit,shell-var"
+        "-modules-right venv,git,direnv"
+        "-hostname-only-if-ssh"
+        "-git-mode fancy"
+        "-path-aliases /Volumes/CM/Active=CM"  # where almost all my git repos live
+)
+_PLG_ARGS="${_PLG_OPTIONS[*]}"  # as a single string
 if [[ -z "$_PS_SYMBOL" ]]; then
     case "$(uname)" in
-        (Darwin)   _PS_SYMBOL='' ;; # '' broken in some nerdfonts; non-proprietary alternative: '⌘'
+        (Darwin)   _PS_SYMBOL='' ;; # '' broken in some nerdfonts; alternative: '⌘'
         (Linux)    _PS_SYMBOL='$' ;;
         (*)        _PS_SYMBOL='%' ;;
     esac
@@ -24,23 +25,45 @@ if [[ -z "$_PS_SYMBOL" ]]; then
 fi
 if [[ -n "${BASH_VERSION}" ]]; then
     _PLG_EXE="$(type -p powerline-go)"
-    # shellcheck disable=SC2116,SC2086 # not useless: collapse spaces (and removes tabs, newlines, returns)
-    _PLG_OPTS="$(echo ${_PLG_OPTS//[$'\t\r\n']/})"
     # Bash doesn't support -modules-right, collapse those into modules
-    _PLG_OPTS="${_PLG_OPTS/ -modules-right /,}"
-    # and as long as that's the case, push powerline to a newline, increasing the max width
-    _PLG_OPTS="${_PLG_OPTS/-max-width [0-9][0-9]/-max-width 50 -newline}"
-    # Replace unused root indicator with OS unique _PS_SYMBOL
-    _PLG_OPTS="${_PLG_OPTS/-shell autodetect/-shell-var _PS_SYMBOL}"
+    _PLG_ARGS="${_PLG_ARGS/ -modules-right /,}"
+    # and as long as that's the case, if there is a max-width then
+    # push powerline to a newline, increasing the max width
+    _PLG_ARGS="${_PLG_ARGS/-max-width [0-9][0-9]/-max-width 50 -newline}"
 elif [[ -n "${ZSH_VERSION}" ]]; then
     _PLG_EXE="$(whence powerline-go)"
-    _PLG_OPTS="${_PLG_OPTS/-shell autodetect/-shell-var _PS_SYMBOL}"
 fi
+
+_powerline_git_ceiling_directories_handler() {
+    # If current directory is a subdirectory of an element of GIT_CEILING_DIRECTORIES
+    # remove the git related options from powerline-go's arguments
+    local ARGS="${_PLG_ARGS//[$'\t\r\n ']+/}"
+    # shellcheck disable=SC2034 # LOCAL_OPTIONS is used by zsh
+    [[ -n "$ZSH_VERSION" ]] && setopt shwordsplit && LOCAL_OPTIONS=1
+    for i in  ${GIT_CEILING_DIRECTORIES//:/ }; do
+        [[ -n "$_verbose" ]] && \
+            printf "PWD: '%s' GCD: '%s' diff: '%s'\n" "${PWD}" "${i}" "${PWD#"${i}"}"
+        if [[ "${PWD#"${i}"}" != "${PWD}" && "${PWD#"${i}"}" != ""  ]]; then
+            # In a subdirectory of GIT_CEILING_DIRECTORY remove the ,git module
+            ARGS="${ARGS/,git/}"
+            ARGS="${ARGS/,gitlite/}"
+            ARGS="${ARGS/-git-mode fancy/}"
+            [[ -n "$_verbose" ]] && \
+                printf "%s != %s ARGS=%s\n" "${PWD#"${i}"}" "${PWD}" "${ARGS}"
+            break
+        fi
+    done
+    #ARGS="${ARGS//[$'\t\r\n ']+/}"  # unneeded now, right?
+    printf "%b" "$ARGS"
+}
 
 _bash_powerline-go() {
     _update_ps1 () {
+        local EXIT_CODE=$?
+        local ARGS
+        ARGS=$(_powerline_git_ceiling_directories_handler)
         # shellcheck disable=2086 # we want word splitting
-        eval "$("${_PLG_EXE}" -eval ${_PLG_OPTS} -error $?)"
+        eval "$("${_PLG_EXE}" -eval ${ARGS} -error $EXIT_CODE)"
     }
     if [[ "${TERM_PROGRAM}" == "iTerm.app" ]]; then
         # iTerm shell integration has a problem with PROMPT_COMMAND
@@ -52,12 +75,14 @@ _bash_powerline-go() {
 }
 
 _zsh_powerline-go() {
-    # Adapted from https://github.com/justjanne/powerline-go
     [[ -e "${_PLG_EXE}" ]] || return
 
     function powerline_precmd() {
-        # shellcheck disable=2086 # we want word splitting
-        eval "$("${_PLG_EXE}" -eval ${=_PLG_OPTS} -error $?)"
+        local EXIT_CODE=$?
+        local ARGS
+        ARGS=$(_powerline_git_ceiling_directories_handler)
+        # shellcheck disable=SC2068,SC2298,SC2296 # zsh string splitting into an array
+        eval "$("${_PLG_EXE}" -eval ${${(z)ARGS}[@]} -error $EXIT_CODE)"
     }
 
     function install_powerline_precmd() {

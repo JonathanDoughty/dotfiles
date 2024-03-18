@@ -149,8 +149,16 @@ _environment_setup() {
     case ${ENV_SET:-notset} in
         (notset)
             [[ "$_debug" -gt 1 && -n "${INSIDE_EMACS}" ]] && set -x
+
+            # Environment variables generic enough to be aggregated here
+
             export EDITOR=vi    # sadly emacs isn't everywhere by default
             export VISUAL=${EDITOR}
+            # Don't let git look above hone or my CM area
+            local CM
+            CM=$(realpath "${HOME}/CM" 2>/dev/null)
+            GIT_CEILING_DIRECTORIES="${HOME}${CM:+:}${CM}"
+            export GIT_CEILING_DIRECTORIES
             export RIPGREP_CONFIG_PATH=${HOME}/.ripgreprc # rc file not automatic considered silly
             export SUDO_PS1='# '
             export TIMEFORMAT=$'\nreal:\t%R\nuser:\t%U\nsystem:\t%S\ncpu:\t%P%%'
@@ -328,10 +336,10 @@ _main() {
     cd . || return          # side-effect: function defs for crutches; initialize tab title & prompt
 
     # Clear variables/functions not intended for further use
-    unset -f _verbose _debug \
-      _environment_setup _interactive_setup _terminal_setup \
-      _define_from _functions _external_defs _aliases _path_additions \
-      "${FUNCNAME[0]}"
+    unset -v _verbose _debug
+    unset -f _environment_setup _interactive_setup _terminal_setup \
+          _define_from _functions _external_defs _aliases _path_additions \
+          "${FUNCNAME[0]}"
 }
 
 _main "$@"
