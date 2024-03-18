@@ -120,8 +120,8 @@
     lr = ! git status -s \
       && git --no-pager log --since='3 days ago' --graph --abbrev-commit --date=relative \
           --pretty=format:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' # list recent commits
-    plnff = pull --no-ff # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
-    plfl = push --force-with-lease  # update remote branch that has been locally rebased
+    pullnff = pull --no-ff # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
+    pushfwl = push --force-with-lease  # update remote branch that has been locally rebased
     rv = remote -v # list remotes
     sw = switch
     # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
