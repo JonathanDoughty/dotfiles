@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # YakShave: replace with https://github.com/andsens/homeshick
+# YakShave: replace the installation functions with a table driven array
+# YakShave: given a table driven array, implement an uninstall to restore state
 
 usage () {
         cat <<EOF
@@ -99,9 +101,16 @@ check_source () {
 }
 
 maybe () {
-    local cmd=( "$@" )
+    local cmd
+    declare -i level=3          # normally only print cmd at the most verbose
+    if [[ $1 =~ ^[0-9]$ ]]; then
+        # Treat leading digits as desired verbose level, not as part of command
+        level=$1
+        shift
+    fi
+    cmd=( "$@" )
     if [[ $DRY_RUN -eq 0 ]]; then
-        vprintf 3 "%s" "${cmd[*]}"
+        vprintf $level "%s" "${cmd[*]}"
         eval "${cmd[*]}"
     else
         vprintf 0 "%s" "${cmd[*]}"
@@ -127,12 +136,12 @@ link_if_not_present () {
     vprintf 3 "Linking to %s if %s not present" "${SOURCE}" "${LINK_PATH}"
     if [ ! -e "${LINK_PATH}" ] && [ ! -L "${LINK_PATH}" ]; then
         vprintf 1 "Creating %s symlink" "${LINK_PATH}"
-        maybe ln -s "${SOURCE}" "${LINK_PATH}"
+        maybe 2 ln -s "${SOURCE}" "${LINK_PATH}"
     elif [ -L "${LINK_PATH}" ]; then
         if [ "$(readlink "${LINK_PATH}")" != "${SOURCE}" ]; then
             vprintf 1 "Replacing %s symlink" "${LINK_PATH}"
-            maybe rm "${LINK_PATH}"
-            maybe ln -s "${SOURCE}" "${LINK_PATH}"
+            maybe 2 rm "${LINK_PATH}"
+            maybe 2 ln -s "${SOURCE}" "${LINK_PATH}"
         else
             vprintf 1 "Not replacing identical %s symlink" "${LINK_PATH}"
         fi
@@ -151,11 +160,11 @@ copy_source_to_dest() {
     [[ "$DEBUG" -gt 1 ]] && trap "set +x" RETURN && set -x
     if [ -e "${SOURCE}/.git" ]; then
         vprintf 1 "Exporting %s git archive to %s" "${SOURCE}" "$DEST"
-        (maybe cd "$SOURCE" && maybe git archive --format=tar ) | \
-            (maybe cd "$DEST" && maybe tar xf -)
+        (maybe 2 cd "$SOURCE" && maybe git archive --format=tar ) | \
+            (maybe 2 cd "$DEST" && maybe tar xf -)
     else
         vprintf 1 "Recursively copying %s into %s" $"${SOURCE}" "${DEST}"
-        maybe cp -Ri "${SOURCE}" "${DEST}"
+        maybe 2 cp -Ri "${SOURCE}" "${DEST}"
     fi
 }
 
@@ -178,7 +187,7 @@ copy_if_not_present_to_dir () {
         DEST_PATH="${DEST_PATH}/${SOURCE##*/}"
     fi
 
-    vprintf 3 "Copying %s if not present in %s" "${SOURCE}" "${DEST_PATH}"
+    vprintf 2 "Copying %s if not present in %s" "${SOURCE}" "${DEST_PATH}"
     if [ -d "${SOURCE}" ] && [ ! -e "${DEST_PATH}" ]; then
         copy_source_to_dest "$SOURCE" "$DEST_PATH"
     elif [ ! -e "${DEST_PATH}" ] && [ ! -L "${DEST_PATH}" ] || [ -d "${DEST_PATH}" ]; then
@@ -192,8 +201,8 @@ copy_if_not_present_to_dir () {
     elif [ -L "${DEST_PATH}" ]; then
         vprintf 1 "Replacing %s symlink with copy" "${DEST_PATH}"
         [ ! -w "${DEST_PATH}" ] && maybe chmod u+w "${DEST_PATH}"  # Undo protection below
-        maybe rm "${DEST_PATH}"
-        maybe cp "${SOURCE}" "${DEST_PATH}"
+        maybe 2 rm "${DEST_PATH}"
+        maybe 2 cp "${SOURCE}" "${DEST_PATH}"
         maybe chmod u-w "${DEST_PATH}"  # Force me to be deliberate to edit single files copied
         return
     else
@@ -233,6 +242,7 @@ app_rcfiles () {
     link_if_not_present "${DOT_PATH}/cheat.yml" "${CONFIGS}/cheat/conf.yml"
     mkdir -p "${CONFIGS}/direnv"
     link_if_not_present "${DOT_PATH}/direnvrc" "${CONFIGS}/direnv/direnvrc"
+    link_if_not_present "${DOT_PATH}/direnv.toml" "${CONFIGS}/direnv/direnv.toml"
     # wezterm's nice but Terminal is sufficient again
     #mkdir -p "${CONFIGS}/wezterm"
     #link_if_not_present "${DOT_PATH}/wezterm.lua" "${CONFIGS}/wezterm/wezterm.lua"

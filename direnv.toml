@@ -1,0 +1,10 @@
+# direnv configuration
+
+[global]
+# slow on, e.g., Synology
+warn_timeout = "10s"
+
+# .envrc in these directories are expected to change
+[whitelist]
+prefix = [ "/Volumes/CM/Active", "~/TW" ]
+
