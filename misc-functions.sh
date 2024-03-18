@@ -149,83 +149,8 @@ which () {  # tell how argument will be interpreted
         || command which "$@"
 }
 
-if [[ -n "$BASH_VERSION" ]]; then
-    # borrowed almost whole cloth from https://github.com/scop/bash-completion/bash-completion
-    _comp_initialize()
-    {
-        local exclude="" outx errx inx
-
-        local flag OPTIND=1 OPTARG='' OPTERR=0
-        while getopts "n:e:o:i:s" flag "$@"; do
-            case $flag in
-                n) exclude+=$OPTARG ;;
-                e) errx=$OPTARG ;;
-                o) outx=$OPTARG ;;
-                i) inx=$OPTARG ;;
-                s)
-                    split=false
-                    exclude+="="
-                    ;;
-                *)
-                    echo "bash_completion: ${FUNCNAME[*]}: usage error" >&2
-                    return 1
-                    ;;
-            esac
-        done
-        shift "$((OPTIND - 1))"
-        # shellcheck disable=SC2034
-        (($#)) && comp_args=("$@")
-
-        COMPREPLY=()
-        local redir='@(?(+([0-9])|{[a-zA-Z_]*([a-zA-Z_0-9])})@(>?([>|&])|<?([>&])|<<?([-<]))|&>?(>))'
-        _get_comp_words_by_ref -n "$exclude<>&" cur prev words cword
-
-        # Complete variable names.
-        _variables && return 1
-
-        # Complete on files if current is a redirect possibly followed by a
-        # filename, e.g. ">foo", or previous is a "bare" redirect, e.g. ">".
-        # shellcheck disable=SC2053
-        if [[ $cur == $redir* || ${prev-} == $redir ]]; then
-            local xspec
-            case $cur in
-                2'>'*) xspec=${errx-} ;;
-                *'>'*) xspec=${outx-} ;;
-                *'<'*) xspec=${inx-} ;;
-                *)
-                    case $prev in
-                        2'>'*) xspec=${errx-} ;;
-                        *'>'*) xspec=${outx-} ;;
-                        *'<'*) xspec=${inx-} ;;
-                    esac
-                    ;;
-            esac
-            cur=${cur##"$redir"}
-            _filedir "$xspec"
-            return 1
-        fi
-
-        # Remove all redirections so completions don't have to deal with them.
-        local i skip
-        for ((i = 1; i < ${#words[@]}; )); do
-            if [[ ${words[i]} == $redir* ]]; then
-                # If "bare" redirect, remove also the next word (skip=2).
-                # shellcheck disable=SC2053
-                [[ ${words[i]} == $redir ]] && skip=2 || skip=1
-                words=("${words[@]:0:i}" "${words[@]:i+skip}")
-                ((i <= cword)) && ((cword -= skip))
-            else
-                ((i++))
-            fi
-        done
-
-        ((cword <= 0)) && return 1
-        prev=${words[cword - 1]}
-
-        [[ ${split-} ]] && _split_longopt && split=true
-
-        return 0
-    }
+if [[ -n "$BASH_VERSION" && ${BASH_VERSINFO[0]} -gt 3 ]]; then
+    : # I used to include bash_completion here for some reason, now in .bashrc
 fi
 
 # OS specific

@@ -300,7 +300,12 @@ _interactive_options() {
             #HISTIGNORE="ssh *:scp *:mta *:"
             shopt -s histappend histreedit histverify
             #shopt -s extglob
-            [ "${BASH_VERSION%%.*}" -gt 3 ] && shopt -s globstar # e.g., ls **/*.jpg
+            if [[ "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+                shopt -s globstar # e.g., ls **/*.jpg
+                # shellcheck disable=SC1091
+                [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]] && \
+                    . "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+            fi
             shopt -s checkwinsize
             ;;
         (*)                     # non-interactive - be standard
