@@ -12,7 +12,7 @@ fi
 
 : "${OS:=$(uname -s)}"          # rather than the builtin OSTYPE for historical reasons
 
-if type add_to_my_path >/dev/null 2>&1 ; then
+if type add_to_my_path &>/dev/null ; then
     # shellcheck disable=SC1091
     [[ -z ${ZSH_VERSION} ]] && . "$(dirname "${BASH_SOURCE[0]}")/path_add_remove.sh"
     # shellcheck disable=SC1091,SC2296 # This is valid zsh sytax
@@ -87,7 +87,7 @@ set_manpath() {
 
 helpme() {                      # help is a bash builtin
     # Use command's --help option (assuming it has one)
-    if type bat 1>/dev/null 2>&1 ; then
+    if type bat &>/dev/null ; then
         "$@" --help 2>&1 | bat --language=help
     else
         "$@" --help 2>&1 | more
@@ -98,7 +98,7 @@ man() {
     # Insure MANPATH is sane before invoking terminal man pager
     [[ -n "${ORIGINAL_MANPATH}" ]] || set_manpath
     # If bat has been installed, use its extra man colorizing
-    if type bat 1>/dev/null 2>&1 && [[ -z "$MANPAGER" ]]; then
+    if type bat &>/dev/null && [[ -z "$MANPAGER" ]]; then
         export MANPAGER="sh -c 'col -bx | bat --language=man'"
     fi
     command man "$@"

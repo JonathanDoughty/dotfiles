@@ -134,7 +134,7 @@ pd () {
                     local arg
                     arg="${1/\^/}"
                     shift
-                    pushd -n "${PWD}" 1> /dev/null 2>&1  # quietly duplicate the current PWD on DIRSTACK
+                    pushd -n "${PWD}" &>/dev/null # quietly duplicate the current PWD on DIRSTACK
                     up "${arg:-1}" "$*"
                     ;;
                 (\?) cat <<-EOF

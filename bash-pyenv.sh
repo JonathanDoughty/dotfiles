@@ -4,7 +4,7 @@
 [[ $_ != "$0" ]] || { echo "This file must be sourced to be useful."; exit 1; }
 
 function activate_pyenv {
-    pyenv root 1> /dev/null 2>&1 || ( echo "Need pyenv in PATH" && return 1 )
+    pyenv root &>/dev/null || ( echo "Need pyenv in PATH" && return 1 )
     PYENV_ROOT="$(pyenv root)" && export PYENV_ROOT
     if [ -n "${PYENV_ROOT}" ] ; then
         if [ -z "${PYENV_SHELL}" ]; then

@@ -3,8 +3,8 @@
 
 [[ $_ != "$0" ]] || { printf "%s must be sourced to be useful." "$0"; exit 1; }
 # Silently exit unless brew is present - since brew is how I install fzf
-type brew 1>/dev/null 2>&1 || return 1
-type fzf 1>/dev/null 2>&1 || return 1
+type brew &>/dev/null || return 1
+type fzf &>/dev/null || return 1
 
 HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-$(brew --prefix)}"  # repeated $(brew --prefix) is slow according to bash_profile.py
 

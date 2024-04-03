@@ -15,7 +15,7 @@ mta () {
     _title () {
         #trap "set +x" RETURN && set -x
         if [[ $can_set_title ]]; then
-            if type set_tab_title 1>/dev/null 2>&1; then # see directory_functions.sh
+            if type set_tab_title &>/dev/null; then # see directory_functions.sh
                 set_tab_title "$@"
             else
                 can_set_title=1

@@ -96,7 +96,7 @@ ssh_identities () {
         [ $verbose -gt 1 ] && \
             printf "ssh-agent processes:\n%s\n" "$(pgrep -l ssh-agent)" && \
             printf "SSH_AUTH_SOCK's owner: %s\n" "$(lsof -t "$SSH_AUTH_SOCK")"
-        if ! /usr/bin/ssh-add -l >/dev/null 2>&1; then
+        if ! /usr/bin/ssh-add -l &>/dev/null ; then
             # Sierra+ enables adding identities with passphrases stored in Keychain via
             # ssh-add --apple-use-keychain
             # ssh-add --apple-load-keychaion will add all local keys with Keychain passwords

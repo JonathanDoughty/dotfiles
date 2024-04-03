@@ -97,7 +97,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
                 # and lose direnv's report as directory is changed
                 builtin cd "$TMPDIR" 2>/dev/null || exit 0
                 command rm -f Brewfile
-                command brew bundle dump 1>/dev/null 2>&1
+                command brew bundle dump &>/dev/null
                 # shellcheck disable=SC2046  # we want separate arguments
                 command brew outdated $(_list_brew_formula_updates)
             )

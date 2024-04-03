@@ -3,7 +3,7 @@
 
 _debug=0
 
-if type is_defined >/dev/null 2>&1 ; then
+if type is_defined &>/dev/null ; then
     # Source common functions
     # shellcheck disable=SC1091
     [[ -z ${ZSH_VERSION} ]] && . "$(dirname "${BASH_SOURCE[0]}")/shell-funcs.sh"
@@ -87,7 +87,7 @@ mv () { command mv -i "$@"; }
 whatsmyip () { dig +short myip.opendns.com @resolver1.opendns.com "$@"; }
 
 # Replacements when available
-type duf  1>/dev/null 2>&1 && [[ -z "$INSIDE_EMACS" ]] && \
+type duf  &>/dev/null && [[ -z "$INSIDE_EMACS" ]] && \
     df () {
         # duf requires line drawing characters
         # Use ~/bin/,duf symlink to patched version to avoid path confusion
@@ -95,9 +95,9 @@ type duf  1>/dev/null 2>&1 && [[ -z "$INSIDE_EMACS" ]] && \
              --hide-mp '*/.timemachine/*,/System/*,/Volumes/Recovery' \
              --output mountpoint,size,used,avail,filesystem
 }
-type dust 1>/dev/null 2>&1 && \
+type dust &>/dev/null && \
     du () { dust --ignore_hidden --no-percent-bars "$@"; }
-type btm  1>/dev/null 2>&1 && \
+type btm  &>/dev/null && \
     top () { btm "$@"; } # `bottom` via brew
 
 # More colorful ls
@@ -111,12 +111,12 @@ if [[ -e "${HOMEBREW_PREFIX}"/bin/lsd ]]; then
         # lsd normally needs nerd-fonts: https://github.com/ryanoasis/nerd-fonts
         "${HOMEBREW_PREFIX}"/bin/lsd $_defaults "$@"
     }
-elif type eza 1>/dev/null 2>&1 ; then
+elif type eza &>/dev/null ; then
     ls () {
         # SynoCLI package adds eza as an alternative to exa.
         eza --classify --color=auto --color-scale --icons "$@"
     }
-elif ls --classify 1>/dev/null 2>&1 ; then # classify <- GNU ls via brew coreutils / Linux
+elif ls --classify &>/dev/null ; then # classify <- GNU ls via brew coreutils / Linux
     ls () {
         command ls --classify --color=auto "$@"
     }
@@ -139,7 +139,7 @@ lr () {  # list recent files
     ls -lrt $_color_arg "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
 }
 
-type rg 1>/dev/null 2>&1 && \
+type rg &>/dev/null && \
     rgd () { rg -. "$@"; }       # ripgrep dot files too
 
 which () {  # tell how argument will be interpreted
@@ -251,7 +251,7 @@ _linux_funcs () {
     pstree () { /usr/bin/pstree -Gpu "$@"; }
     rm () { command rm -i "$@"; }
     if [ -n "${DESKTOP_SESSION}" ]; then  # When in GUI; Debian specific?
-        type xdg-open 1>/dev/null && \
+        type xdg-open &>/dev/null && \
             open () { xdg-open "$@"; }
     fi
 }

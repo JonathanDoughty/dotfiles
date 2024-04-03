@@ -6,7 +6,7 @@ case "$1" in
         extension-handler "$1"
         ;;
     (*)
-        if type lesspipe > /dev/null 2>&1 ; then
+        if type lesspipe &>/dev/null ; then
             : # Let (Linux) standard lesspipe handle
         else
             # On, e.g., OS X less is less
@@ -21,7 +21,7 @@ case "$1" in
                        ;;
                 (*)
                     # Colorize the rest
-                    if type -t bat >/dev/null 2>&1 ; then
+                    if type bat &>/dev/null ; then
                         bat --color always --decorations always "$1"
                     fi
                     exit 0

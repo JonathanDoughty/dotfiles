@@ -15,7 +15,7 @@
 
 [[ $_ != "$0" ]] || { printf "%s must be sourced to be useful." "$0"; exit 1; }
 
-if ! type -t rpath 1> /dev/null 2>&1 ; then
+if ! type -t rpath &>/dev/null ; then
     # shellcheck disable=SC1090
     EXT_CMDS="$(script_source "path_add_remove")" && [ -e "$EXT_CMDS" ] && source "$EXT_CMDS"
 fi
