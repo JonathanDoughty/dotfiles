@@ -45,6 +45,7 @@ CM_ROOT=$(dirname "${CM_DIR}")
 EMACS_PATH="${HOME}/CM/emacs"
 MAVEN_PATH="${CACHE_PATH}/MavenRepository"
 GRADLE_PATH="${CACHE_PATH}/Gradle"
+EMACS_BACKUP="${CACHE_PATH}/EmacsBackups"
 CUSTOM="${CUSTOM:-/path/to/custom_installation_script}"
 INIT_DB=0                       # Skip database related unless > 0
 INIT_JAVA=0                     # Skip Java related unless > 0
@@ -69,10 +70,10 @@ trace() {
 }
 
 vprintf () {
-    local level=$1; shift
-    local fmt=$1; shift
+    # At verbosity >= first arg level output remainder to stderr
+    local level=$1 fmt="$2\n" && shift 2
     # shellcheck disable=SC2059 # the point is to pass in fmt
-    [[ $VERBOSE -ge $level ]] && printf "$fmt" "$@" && printf "\n"
+    [[ $VERBOSE -ge $level ]] && printf "$fmt" "$@" 1>&2
 }
 
 check_source () {
@@ -118,7 +119,7 @@ maybe () {
 }
 
 link_if_not_present () {
-    # Create a symlink to source at target (default is $HOME)
+    # Create a symlink to source at target (default target is same file name in $HOME)
     # args: source [target_file]
     vprintf 2 "Linking %s" "$*"
     check_source "$@"
@@ -248,6 +249,9 @@ app_rcfiles () {
     #mkdir -p "${CONFIGS}/wezterm"
     #link_if_not_present "${DOT_PATH}/wezterm.lua" "${CONFIGS}/wezterm/wezterm.lua"
     link_if_not_present "${EMACS_PATH}" "${HOME}/.emacs.d"
+    mkdir -p "$EMACS_BACKUP"    # Insure it exists
+    link_if_not_present "${DOT_PATH}/mg" "${HOME}/.mg"
+    link_if_not_present  "$EMACS_BACKUP" "${HOME}/.mg.d"
     link_if_not_present "${DOT_PATH}/.digrc"
     link_if_not_present "${DOT_PATH}/.editorconfig"
     link_if_not_present "${DOT_PATH}/.gitconfig"
