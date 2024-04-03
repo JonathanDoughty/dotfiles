@@ -248,7 +248,7 @@ _terminal_setup() {
             export PAGER='cat'
             ;;
         (xterm*|dtterm*|linux|screen*|*256*)
-            if ! _define_from "powerline.sh" ; then
+            if ! _define_from "cli_prompt.sh" ; then
                 # Embed working directory in prompt and terminal window title
                 if [ "${BASH/*bash}" == "" ] && [ $EUID -ne 0 ]; then
                     PS1="${HLITE}${HOSTNAME%%[-.]*} \W${YELLOW} \$(parse_git_branch)${NONE} $ "

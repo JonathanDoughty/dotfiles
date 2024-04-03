@@ -243,6 +243,7 @@ app_rcfiles () {
     mkdir -p "${CONFIGS}/direnv"
     link_if_not_present "${DOT_PATH}/direnvrc" "${CONFIGS}/direnv/direnvrc"
     link_if_not_present "${DOT_PATH}/direnv.toml" "${CONFIGS}/direnv/direnv.toml"
+    link_if_not_present "${DOT_PATH}/starship.toml" "${CONFIGS}/starship.toml"
     # wezterm's nice but Terminal is sufficient again
     #mkdir -p "${CONFIGS}/wezterm"
     #link_if_not_present "${DOT_PATH}/wezterm.lua" "${CONFIGS}/wezterm/wezterm.lua"

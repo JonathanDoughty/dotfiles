@@ -1,0 +1,62 @@
+# starship.toml - https://starship.rs/config/
+
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+#format = """$character"""       # minimal left prompt
+# requires ble.sh https://github.com/akinomyoga/ble.sh for bash, with far reaching consequences
+#right_format = """$all"""
+
+add_newline = false             # I like minimal 
+
+[character]
+success_symbol = '[:](bold fg:green)'
+error_symbol = '[✗](bold fg:red)'
+
+[line_break]
+disabled = true                 # I like old style
+
+[aws]
+disabled = true
+
+[cmd_duration]                  # this seems to accumulate idle time
+format = '[$duration]($style) '
+disabled = true
+
+[directory]
+truncation_symbol = ''
+use_logical_path = false
+
+[directory.substitutions]
+'/Volumes/CM' = 'CM'
+
+[gcloud]
+disabled = true
+
+[git_branch]
+format = '[$symbol$branch(:$remote_branch)]($style) '
+
+[lua]
+format = '[$symbol]($style)'
+disabled = true
+
+[nodejs]
+format = '[$symbol]($style)'
+disabled = true
+
+[os]
+format = '[$symbol]($style)'
+disabled = false
+
+[os.symbols]
+Macos = ' ' # plainer '' - broken in some nerdfonts; alternative: '⌘'
+
+[perl]
+disabled = true
+
+[python]
+disabled = true
+
+[username]
+show_always = true
+format = '[$user]($style) '

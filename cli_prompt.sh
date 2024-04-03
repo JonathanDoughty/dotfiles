@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
-# fancy up the command line prompt
-# Most of this now uses https://github.com/justjanne/powerline-go if present
-# else, for bash, use adaptation of https://github.com/riobard/bash-powerline
+# command line prompt glitz
+# Selects from implementation based on:
+# https://github.com/starship/starship
+# https://github.com/justjanne/powerline-go if present
+# https://github.com/riobard/bash-powerline
 
+# Order determines preference as determined by _prompt_setup
+# starship configured via starship.toml; other below
+_PROMPT_SELECTIONS=( "starship" "powerline-go" "_bash_powerline")
+
+if [[ -z "$_PS_SYMBOL" ]]; then # OS identifying symbol
+    case "$(uname)" in
+        (Darwin)   _PS_SYMBOL='' ;; # '' broken in some nerdfonts; alternative: '⌘'
+        (Linux)    _PS_SYMBOL='$' ;;
+        (*)        _PS_SYMBOL='%' ;;
+    esac
+    export _PS_SYMBOL
+fi
+
+# powerline-go arguments, you might prefer others.
 # Order matters, at least wrt bash and the -modules* lines
 _PLG_OPTIONS=(
         "-mode patched -theme default -max-width 30"
@@ -15,14 +31,6 @@ _PLG_OPTIONS=(
         "-path-aliases /Volumes/CM/Active=CM"  # where almost all my git repos live
 )
 _PLG_ARGS="${_PLG_OPTIONS[*]}"  # as a single string
-if [[ -z "$_PS_SYMBOL" ]]; then
-    case "$(uname)" in
-        (Darwin)   _PS_SYMBOL='' ;; # '' broken in some nerdfonts; alternative: '⌘'
-        (Linux)    _PS_SYMBOL='$' ;;
-        (*)        _PS_SYMBOL='%' ;;
-    esac
-    export _PS_SYMBOL
-fi
 if [[ -n "${BASH_VERSION}" ]]; then
     _PLG_EXE="$(type -p powerline-go)"
     # Bash doesn't support -modules-right, collapse those into modules
@@ -58,6 +66,7 @@ _powerline_git_ceiling_directories_handler() {
 }
 
 _bash_powerline-go() {
+
     _update_ps1 () {
         local EXIT_CODE=$?
         local ARGS
@@ -193,21 +202,51 @@ _bash_powerline() {
     unset __powerline
 }
 
-[[ -n "${ZSH_VERSION}" ]] && emulate -L bash
-: "${OS:=$(uname -s)}"
-if [[ "${OS/*Darwin*/}" == "" && "${TERM_PROGRAM}" != "including_Apple_Terminal" ]]; then
-   if [ -n "$ZSH_VERSION" ]; then
-       _zsh_powerline-go
-   elif [ -n "$BASH_VERSION" ]; then
-       if [[ -e "$_PLG_EXE" ]]; then
-           _bash_powerline-go
-       else
-           _bash_powerline
-       fi
-   fi
-else
-    POWERLINE_GIT=0
-    _bash_powerline
-fi
-[[ -n "$BASH_VERSION" ]] && unset -f _zsh_powerline-go _bash_powerline _bash_powerline-go
-[[ -n "$ZSH_VERSION" ]] && unhash -f _zsh_powerline-go _bash_powerline _bash_powerline-go
+_prompt_setup() {
+    # Determine which of prompt mechanisms is available and initialize
+    local exe
+    [[ -z "$ZSH_VERSION" ]] && : # trap "set +x" RETURN && set -x
+
+    for p in "${_PROMPT_SELECTIONS[@]}"; do
+        exe=$(type "$p" 2>/dev/null | head -1)
+        if [[ -n "$exe" ]]; then
+            exe=${exe//* /} # just the full path to the executable (or that it's a function)
+            case "$exe" in
+                (*powerline-go*)
+                    [[ -n "$ZSH_VERSION" ]] && _zsh_powerline-go
+                    [[ -z "$ZSH_VERSION" ]] && _bash_powerline-go
+                    break
+                    ;;
+                (*starship*)
+                    [[ -n "$ZSH_VERSION" ]] && eval "$($exe init zsh)"
+                    [[ -z "$ZSH_VERSION" ]] && eval "$($exe init bash)"
+                    break
+                    ;;
+                ('function')
+                    if [[ -z "$ZSH_VERSION" ]]; then
+                        _bash_powerline
+                    else
+                        autoload -Uz vcs_info
+                        if [[ $(type precmd &>/dev/null) -ne 0 ]] ; then
+                            precmd () { vcs_info ; }
+                            zstyle ':vcs_info:*' formats ' %s(%F{red}%b%f)'
+                            # shellcheck disable=SC2034,SC2154 # used by zsh
+                            PROMPT="%n@%m %? %d %F{red}%/%f$vcs_info_msg_0_ $_PS_SYMBOL "
+                        fi
+                    fi
+                    break
+                    ;;
+                (*)
+                    break
+                    ;;
+            esac
+        fi
+    done
+    [[ -z "$exe" ]] && printf "None of %s found for prompt\n" "${_PROMPT_SELECTIONS[*]}"
+}
+
+_prompt_setup
+
+# clean up
+_funcs=(_zsh_powerline-go _bash_powerline _bash_powerline-go _prompt_setup)
+unset -f "${_funcs[@]}" ; unset -v _funcs
