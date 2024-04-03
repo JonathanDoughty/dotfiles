@@ -1,32 +1,48 @@
 #!/usr/bin/env bash
-# path_add_remove.sh
-# PATH manipulation
+# path_add_remove.sh - PATH manipulation
 
-( _verbose=1 && is_sourced )
+type vprintf &>/dev/null || _define_from "shell_funcs.sh"
 
-# Set up standard paths to include only existing directories without dups
-# If a path is already in PATH, move it to the front
 add_to_my_path () {
-    local d
-    args="$*" oldIFS=$IFS IFS=' :'
-    for d in $args; do
-        if [[ -d "$d" ]]; then # candidate exists
-            if [[ "${PATH}" != "${PATH/:${d}/}" ]]; then
-                # $d in PATH (but not at front)
-                PATH=${PATH/:${d}/}  # remove previous
-            fi
-            PATH=$d:$PATH
+    # Add arguments to path and remove any duplicates
+    ppath "${@}"
+    remove_path_duplicates
+}
+
+remove_path_duplicates() {
+    # via https://www.baeldung.com/linux/remove-paths-from-path-variable
+    local oldIFS newPath p
+    oldIFS=$IFS
+    IFS=:
+    newPath=
+    declare -A ALREADY_IN_PATH
+    for p in $PATH; do
+        if [[ -n "$p" && -z "${ALREADY_IN_PATH[$p]}" ]]; then
+            newPath=${newPath:+$newPath:}$p
+            ALREADY_IN_PATH[$p]=$p
         fi
     done
-    PATH=${PATH//::/:}      # remove any duplicate :
-    PATH=${PATH%:}          # trim any trailing :
     IFS=$oldIFS
+    vprintf 2 "New PATH %s was %s" "${newPath}" "$PATH"
+    PATH=$newPath
 }
 
 ppath () {
-    # prepend directory given as argument to PATH
-    typeset d
-    for d do
+    # prepend directories given as arguments to PATH
+    vprintf 2 "%d args: %s" "${#@}" "${*}"
+    local code n d
+    # POSIXly reverse arguments (so that first of arguments is first in eventual PATH)
+    # via https://unix.stackexchange.com/a/467924/13887
+    code='set --'
+    n=$#
+    while [ "$n" -gt 0 ]; do
+        code="$code \"\${$n}\""
+        n=$((n - 1))
+    done
+    eval "$code"
+
+    # shellcheck disable=SC2068
+    for d ; do
         if [ -d "$d" ] ; then
             PATH=$d:$PATH
         fi
@@ -34,16 +50,18 @@ ppath () {
 }
 
 rpath () {
-    # remove directory given as argument from PATH
-    typeset rmdir=$1 tIFS=$IFS d tPATH
+    # remove argument directories from PATH
+    vprintf 2 "%d args: %s" "${#@}" "${*}"
+    local oldIFS=$IFS r d newPath
     IFS=:
-    set "$PATH"
-    for d do
-        if [ "$rmdir" != "$d" ] ; then
-            tPATH=${tPATH:+"$tPATH:"}${d}
-        fi
+    for d in $PATH; do
+        for r in "$@"; do
+            if [ "$r" == "$d" ] ; then
+                continue 2
+            fi
+        done
+        newPath=${newPath:+"$newPath:"}${d}
     done
-    PATH=$tPATH
-    IFS=$tIFS
-    unset tPATH tIFS rmdir d
+    IFS=$oldIFS
+    PATH=$newPath
 }

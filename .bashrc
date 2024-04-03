@@ -78,10 +78,10 @@ _functions() {
         if [[ -e "$EXT_CMDS" ]]; then
             # shellcheck disable=SC1090
             source "$EXT_CMDS"
-            [[ "$_verbose" -gt 0 ]] && printf "sourced definition from %s\n" "$1"
+            [[ "$_verbose" -gt 0 ]] && printf "sourced definition from %s\n" "$1" 1>&2
             return 0
         else
-            [[ "$_verbose" -gt 1 ]] && printf "skipped definitions from non-existent %s\n" "$1"
+            [[ "$_verbose" -gt 1 ]] && printf "skipped sourcing from non-existent %s\n" "$1" 1>&2
             return 1
         fi
     }
@@ -97,14 +97,16 @@ _path_additions() {
     [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
 
     # Start by sanitizing previously set PATH (*cough* path_helper & /etc/paths.d/*)
-    local ORIGINAL_PATH=()
-    ORIGINAL_PATH=( "${PATH//:/ }" )
+    declare -a ORIGINAL_PATH
+    local oldIFS=$IFS
+    IFS=:
+    read -r -a ORIGINAL_PATH <<<"$PATH"
+    IFS=$oldIFS
     # shellcheck disable=SC2123  # because PATH is what will be sanitized / added to
     PATH=
     add_to_my_path "${ORIGINAL_PATH[@]}"
-    [[ "$_verbose" -gt 1 ]] && printf "initial cleaned PATH: %s\n" "$PATH"
 
-    # Order matters below: additions are made sequentially at front of PATH
+    # Order matters below: additions made later, at front of PATH, take precedence
     add_to_my_path /usr/local/share/bin
     add_to_my_path /usr/local/bin
 
@@ -120,6 +122,7 @@ _path_additions() {
         add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
         ;;
     (linux*)
+        # I don't typically do these any more
         #add_to_my_path /usr/psql-*/bin   # PostgreSQL
         #add_to_my_path /snap/bin         # snaps
         #add_to_my_path /opt/local/apache-maven-*/bin  # Java
@@ -185,7 +188,7 @@ _environment_setup() {
             ;;
         (*)  # environment already set
             if [[ "$PATH" -ne "$ENV_SET" ]]; then
-                printf "PATH has gotten out of sync:\n%s\nexpected:\n%s\n" "$PATH" "$ENV_SET"
+                printf "PATH has gotten out of sync:\n%s\nexpected:\n%s\n" "$PATH" "$ENV_SET" 1>&2
             fi
             ;;
     esac # ! ENV_SET
@@ -287,7 +290,7 @@ _terminal_setup() {
     # An issue seen in emacs shell and Terminal exec bash
     PROMPT_COMMAND=${PROMPT_COMMAND/;;/;}
 
-    if ! ssh-add -l >/dev/null 2>&1 ; then # backstop login_actions
+    if ! ssh-add -l &>/dev/null ; then # backstop login_actions
         ssh_start_agent ""
         [[ $_verbose -gt 0 ]] && echo "started ssh agent ${SSH_AGENT_PID}"
     fi
