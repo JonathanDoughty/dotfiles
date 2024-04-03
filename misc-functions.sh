@@ -102,19 +102,25 @@ type btm  &>/dev/null && \
 
 # More colorful ls
 _is_type ls 'alias' && unalias ls # replace Linux's system alias
-if [[ -e "${HOMEBREW_PREFIX}"/bin/lsd ]]; then
+if [[ -e "${HOMEBREW_PREFIX}"/bin/lsd || -e /usr/local/bin/lsd ]]; then
     ls () {
         local _defaults=""
          # emacs' shell-mode is not a true terminal emulator
         [[ "$INSIDE_EMACS" =~ 'comint' ]] && _defaults="--classic"
-        # I find lsd (rust-based lsdeluxe) to be more consistent with ls than the alternative exa.
-        # lsd normally needs nerd-fonts: https://github.com/ryanoasis/nerd-fonts
-        "${HOMEBREW_PREFIX}"/bin/lsd $_defaults "$@"
+        # I find lsd (lsdeluxe) more consistent with ls flags than the alternative e{x,z}a.
+        command lsd $_defaults "$@"
     }
 elif type eza &>/dev/null ; then
     ls () {
-        # SynoCLI package adds eza as an alternative to exa.
-        eza --classify --color=auto --color-scale --icons "$@"
+        local _sort=""
+        # SynoCLI package adds eza as an alternative to exa
+        if [[ "$1" =~ -.* && "$1" != x"${1/t/}" ]]; then
+            # Handle non-traditional -t).
+            local _args="${1/t/}"
+            shift
+            _sort="$_args --sort=modified"
+        fi
+        eza --classify --color=auto --color-scale --icons "$_sort" "$@"
     }
 elif ls --classify &>/dev/null ; then # classify <- GNU ls via brew coreutils / Linux
     ls () {
@@ -223,7 +229,7 @@ _macos_funcs () {
 
     _is_type "time_machine_local" "file" && \
         tml() {
-            time_machine_local      # my force a local time machine update script
+            time_machine_local "$@" # start local time machine update script
         }
 
     trash () {
