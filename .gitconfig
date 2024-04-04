@@ -56,20 +56,20 @@
 
 [pull]
     rebase = true # like git pull --rebase every time you git pull
+    ff = only     # refuse to create a merge commit 
     # was rebase = merges
 [rebase]
     autoStash = true
     autoSquash = true
-	updateRefs = true
+    updateRefs = true
 [push]
     default = current
-	autoSetupRemote = true
-	useForceIfIncludes = true
+    autoSetupRemote = true
+    useForceIfIncludes = true
 [core]
     excludesfile = ~/.gitignore_global
     whitespace = trailing-space,space-before-tab
     safecrlf = warn
-    # added for akela
     autocrlf = input
     #autocrlf - doesn't work the way you think, safecrlf seems to be better
 [pager]
@@ -108,13 +108,13 @@
     # Show diffs between branches: usage git ld branch1..branch2
     # Colors are 8-bit https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
     # Similar with wrapping, standard color names, subject and non-empty body, short author email
-    ld = !git --no-pager log --graph --abbrev-commit --date=relative \
+    ld = !git --no-pager log --graph --branches --abbrev-commit --date=relative \
     --pretty=tformat:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' -n 25
     # My old preferred, with ansi color codes and lacking author info
     ldo = log --graph --abbrev-commit --date=relative \
     --pretty=format:'%C(204)%h%Creset -%C(214)%d%Creset %s %C(48)(%cr)%Creset'
     lpd = log -p # show patches diff style
-    ls = ls-files # list files git managed
+    ls = ls-files # list git managed files
     lsu = ls-files --others --exclude-standard # List untracked files; add via: g addu
     lsi = ls-files -o -i --exclude-standard    # List files ignored by git:
     lr = ! git status -s \
@@ -123,6 +123,7 @@
     pullnff = pull --no-ff # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
     pushfwl = push --force-with-lease  # update remote branch that has been locally rebased
     rv = remote -v # list remotes
+    slog = log --pretty=format:'%w(132,0,8)%Cred%h%Creset %C(magenta)%as%Creset%n%Cblue%s%Creset' --name-status -S # search commits changing the occurance of <string>
     sw = switch
     # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
     wip = !git add -u && git commit -m "WIP"  # save all changes as work-in-progress
