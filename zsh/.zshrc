@@ -57,7 +57,7 @@ if [[ "$ZSH_EVAL_CONTEXT" == "file" ]]; then
     source ${DOTFILES}/shell-funcs.sh
     source ${DOTFILES}/path_add_remove.sh
     source ${DOTFILES}/less_termcap.sh
-    source ${DOTFILES}/powerline.sh
+    source ${DOTFILES}/cli_prompt.sh
     source ${DOTFILES}/bash-brew.sh # issues with read - ask()?
     source ${DOTFILES}/bash-emacs.sh
     source ${DOTFILES}/bash-tmux.sh
