@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bash_brew.sh - brew related shell integration and aliases/functions
-
+# shellcheck disable=SC2317 # usage defined for visibility; redefined internally
 
 if [[ -n "$ZSH_VERSION" ]]; then
     : # zsh accounted for
@@ -24,50 +24,77 @@ bash completion.
 EOF
 
 }
+__bash_brew_usage=$(declare -f -p _bash_brew_usage) # redefine from global variable below
 
-# Set up brew shellenv and shell completion if installed
-# allowing for early definition of HOMEBREW_PREFIX
-candidates=("$HOMEBREW_PREFIX" "/opt/homebrew" "/home/linuxbrew" "/usr/local")
-for d in "${candidates[@]}"; do
-    if [[ -e "${d}/bin/brew" ]]; then
-        HOMEBREW_DIR="$d"
-        case "$PATH" in
-            (*${HOMEBREW_DIR}/bin*)
-                # Exclude adding to PATH since already present
-                eval "$("${HOMEBREW_DIR}"/bin/brew shellenv | sed '/ PATH/d')" ;;
-            (*)
-                eval "$("${HOMEBREW_DIR}"/bin/brew shellenv)" ;;
-        esac
-        MANPATH="${MANPATH/:$/}"; export MANPATH # brew's shellenv appends an extra :
-        if [[ -n "$BASH_VERSION" ]]; then
-            # shellcheck disable=SC2031 # I don't see how this is modifing _verbose in a subshell
-            [[ "${_verbose:-0}" -gt 0 ]] && \
-                printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
-            if [[ -r "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh" ]]
-            then
-                # shellcheck disable=1091
-                source "${HOMEBREW_DIR}/etc/profile.d/bash_completion.sh"
-            else
-                for COMPLETION in "${HOMEBREW_DIR}/etc/bash_completion.d/"*
-                do
-                    # shellcheck disable=1090
-                    [[ -r "${COMPLETION}" ]] && source "${COMPLETION}"
-                done
-            fi
-        else
-            : # zsh MANPATH / completion TBD
+_homebrew_setup () {
+    # allowing for early definition of HOMEBREW_PREFIX
+    local candidates d HOMEBREW_DIR
+    candidates=("$HOMEBREW_PREFIX" # Already defined?
+                "/opt/homebrew"
+                "/home/linuxbrew"
+                "/usr/local")
+    for d in "${candidates[@]}"; do
+        if [[ -e "${d}/bin/brew" ]]; then
+            HOMEBREW_DIR="$d"
+            case "$PATH" in
+                (*${HOMEBREW_DIR}/bin*)
+                    # Exclude adding to PATH since already present
+                    eval "$("${HOMEBREW_DIR}"/bin/brew shellenv | sed '/ PATH/d')" ;;
+                (*)
+                    eval "$("${HOMEBREW_DIR}"/bin/brew shellenv)" ;;
+            esac
+            break
         fi
-        break
-    fi
-done
-unset candidates d HOMEBREW_DIR
+    done
+}
 
-if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
-    brew () {
+_integrations () {
+    local COMPLETION
+    # Set up brew shellenv and shell completion if installed
+    if [[ -n "$BASH_VERSION" ]]; then
+
+        local extglob
+        extglob=$(shopt -p extglob)
+        MANPATH="${MANPATH%%+(:)}"; export MANPATH # brew's shellenv appends extra :
+        eval "$extglob"
+
+        # shellcheck disable=SC2031 # I don't see how this is modifing _verbose in a subshell
+        [[ "${_verbose:-0}" -gt 0 ]] && \
+            printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
+
+        # If bash_completions is installed...
+        if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]
+        then
+            # shellcheck disable=1091  # ... let it handle others
+            . "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+        else
+            # ... otherwise look for other homebrew completion scripts
+            for COMPLETION in "${HOMEBREW_PREFIX}/etc/bash_completion.d/"*
+            do
+                # shellcheck disable=1090
+                [[ -r "${COMPLETION}" ]] && . "${COMPLETION}"
+            done
+        fi
+    else
+        : # zsh MANPATH / completion TBD
+    fi
+    export HOMEBREW_NO_ENV_HINTS=1 # stop with the hints already
+}
+
+_homebrew_setup
+
+if [[ -n "${HOMEBREW_PREFIX}" ]]; then
+
+    _integrations
+
+    # Define wrapper function around normal brew shell
+    brew() {
         # Avoid polluting virtual environments, preclude other brew blunders,
         # and provide commands that brew doesn't support yet.
 
         local python_path
+
+        eval "$__bash_brew_usage" # define usage again locally
 
         _check_brew_python () {
             [[ -n "$BASH_VERSION" ]] && python_path="$(type -p python3)"
@@ -104,7 +131,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
             [[ -n "$_debug" ]] || unset -f _list_brew_formula_updates
         }
 
-        case ${1} in
+        case ${1} in  # wrapper defined brew verbs
             (install)
                 # Don't believe me? Read https://docs.brew.sh/Homebrew-and-Python
                 python_path="$(_check_brew_python)"
@@ -113,7 +140,8 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
                 else
                     (
                         PATH=${HOMEBREW_PREFIX}/bin:${PATH}
-                        printf "Installing in subshell, python3 here was %s now %s\n" "${python_path}" "$(type -p python3)"
+                        printf "Installing in subshell, python3 here was %s now %s\n" \
+                               "${python_path}" "$(type -p python3)"
                         [[ "$(_check_brew_python)" == "" ]] && "${HOMEBREW_PREFIX}"/bin/brew "$@"
                     )
                 fi
@@ -142,13 +170,13 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then  # brew was found above
         esac
 
         # No need for these outside
-        [[ -n "$_debug" ]] || unset -f _check_brew_python _check_outdated
+        [[ -n "$_debug" ]] || unset -f _check_brew_python _check_outdated _bash_brew_usage
     }
-
-    export HOMEBREW_NO_ENV_HINTS=1 # stop with the hints already
-
-    ( # Being sourced?
-        [[ -n $ZSH_VERSION && $ZSH_EVAL_CONTEXT =~ :file$ ]] ||
-        [[ -n $BASH_VERSION ]] && (return 0 2>/dev/null)
-    ) || brew "${@:-help}"      # otherwise invoke the wrapper
 fi
+
+unset -f _bash_brew_usage _homebrew_setup _integrations
+
+( # Being sourced?
+    [[ -n $ZSH_VERSION && $ZSH_EVAL_CONTEXT =~ :file$ ]] ||
+        [[ -n $BASH_VERSION ]] && (return 0 2>/dev/null)
+) || brew "${@:-help}"          # otherwise invoke the wrapper

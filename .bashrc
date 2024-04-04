@@ -236,8 +236,6 @@ _terminal_setup() {
         echo "(""${ref#refs/heads/}"")"
     }
 
-    is_defined __git || _define_from "git-completion.bash"  # also zsh despite the name
-
     local HLITE="\[\033[0;96m\]" # High intensity cyan
     local YELLOW="\[\033[0;33m\]"
     local NONE="\[\033[0m\]"
@@ -310,14 +308,8 @@ _interactive_options() {
             HISTCONTROL=ignoredups
             #HISTIGNORE="ssh *:scp *:mta *:"
             shopt -s histappend histreedit histverify
-            #shopt -s extglob
-            if [[ "${BASH_VERSINFO[0]}" -gt 3 ]]; then
-                shopt -s globstar # e.g., ls **/*.jpg
-                # shellcheck disable=SC1091
-                [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]] && \
-                    . "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
-            fi
             shopt -s checkwinsize
+            # completion setup moved to brew, OS/system inits, or specific additions
             ;;
         (*)                     # non-interactive - be standard
             ;;
