@@ -52,9 +52,10 @@ Aspects of these that might be of interest:
   which are rarely used any longer.
 * I've adapted most of my crutches to be both `bash` and `zsh` compatible,
   however the latter tend to be less well tested - `bash` is still my
-  preferred shell. I avoid the various `zsh` frameworks in favor of knowing
-  where and what my customizations are doing. I put effort into being
-  compatible with macOS's native bash only where absolutely necessary.
+  default shell. I avoid the various `zsh` frameworks in favor of knowing
+  where and what my customizations are doing.
+* While I think this is all still compatible with macOS's native bash I put
+  effort into that only when absolutely necessary.
 * [shellcheck](https://github.com/koalaman/shellcheck) has saved me from many
   a scripting blunder - recommended.
 * Every so often I would un-comment PROFILE_LOG in `.bash_profile` and
