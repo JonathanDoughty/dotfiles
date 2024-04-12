@@ -10,20 +10,25 @@ add_to_my_path () {
 }
 
 remove_path_duplicates() {
-    # via https://www.baeldung.com/linux/remove-paths-from-path-variable
+    # Implemented without the associative arrays to be macOS /bin/bash compatible
     local oldIFS newPath p
     oldIFS=$IFS
     IFS=:
     newPath=
-    declare -A ALREADY_IN_PATH
+
+    declare -a components
+    declare -i index
     for p in $PATH; do
-        if [[ -n "$p" && -z "${ALREADY_IN_PATH[$p]}" ]]; then
-            newPath=${newPath:+$newPath:}$p
-            ALREADY_IN_PATH[$p]=$p
-        fi
+        for (( i=0 ; i < index ; i++ )) ; do
+            if [[ -n "$p" && "${components[$i]}" == "$p" ]]; then
+                continue 2
+            fi
+        done
+        newPath=${newPath:+$newPath:}$p
+        components[index]=$p
+        (( index++ ))
     done
-    IFS=$oldIFS
-    vprintf 2 "New PATH %s was %s" "${newPath}" "$PATH"
+    vprintf 2 "\nNew PATH:\n%s\nwas:\n%s\n" "${newPath//:/$'\n'}" "${PATH//:/$'\n'}"
     PATH=$newPath
 }
 

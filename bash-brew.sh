@@ -4,6 +4,8 @@
 
 if [[ -n "$ZSH_VERSION" ]]; then
     : # zsh accounted for
+elif [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
+    return                      # not dealing with old bash yet
 fi
 
 _bash_brew_usage () {

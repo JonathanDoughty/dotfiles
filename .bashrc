@@ -117,7 +117,6 @@ _path_additions() {
             add_to_my_path "${HOMEBREW_PREFIX}/"{bin,sbin} # move before standards
             add_to_my_path "${HOMEBREW_PREFIX}"/opt/coreutils/bin # GNU replacements for standards
         fi
-        [[ "$TERM_PROGRAM" == "iTerm.app" ]] && add_to_my_path "${HOME}/.iterm2"
          # Prefer manually maintained Python over homebrew's dependency updated one
         add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
         ;;

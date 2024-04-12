@@ -31,11 +31,12 @@ set_manpath() {
     # Set up standard paths to include only existing directories, only once, on first use
     add_to_man_path () {
         # Be DRY and don't repeat path handling logic from path_add_remove.sh
-        local OLD_PATH="$PATH"; PATH="${MANPATH}"
-        add_to_my_path "$@"
+        local OLD_PATH="$PATH"
+        PATH="${MANPATH//::/:}" # replace any :: with :
+        add_to_my_path "${@//:/ }"
         MANPATH="$PATH"
         PATH="$OLD_PATH"
-        [[ -n "$VERBOSE" ]] && printf "MANPATH: %s\n" "${MANPATH}"
+        [[ -n "$VERBOSE" ]] && printf "MANPATH: %s\n" "${MANPATH//:/ }"
     }
 
     local mandirs=()
