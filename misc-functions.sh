@@ -63,8 +63,12 @@ for _f in 'add_to_my_path' 'ppath' 'rpath'; do
 done
 
 ssh_start_agent() {
-    # Yakshave: needs zsh work
-    lazy_load_from "${FUNCNAME[0]}.sh" "$@"
+    if [[ -n "$BASH_VERSION" ]]; then
+        lazy_load_from "${FUNCNAME[0]}.sh" "$@"
+    elif [[ -n "$ZSH_VERSION" ]]; then
+        # shellcheck disable=SC1087,SC2154 # This is zsh
+        lazy_load_from "${funcstack[1]}.sh" "$@"
+    fi
 }
 
 # standard command options and shortcuts
