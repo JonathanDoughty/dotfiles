@@ -260,28 +260,24 @@ _terminal_setup() {
             ;;
     esac
 
-    # Environment update on directory entry - here because this is inherently terminal / change directory related
+    # Terminal control related external definitions
+    local files f
+
+    files=(
+        "enable_direnv.sh"
+        "iterm_integration.sh"
+    )
+    for f in "${files[@]}"; do
+        # source the ones that exist
+        _define_from "$f"
+    done
+
 
     # See https://emacs.stackexchange.com/q/2573/5146 wrt Emacs shell-mode
     # Note old bash version syntax for macOS native bash compatibility
     # Avoid macOS / direnv / iTerm conflict
     [[ -z "${OSTYPE/darwin*}" && -n "${ITERM_SESSION_ID}" ]] && \
         PROMPT_COMMAND="${PROMPT_COMMAND}${PROMPT_COMMAND:+;}unset XPC_SERVICE_NAME;"
-
-    is_defined direnv && eval "$(direnv hook "$0")"
-
-    # iTerm integration (must be after direnv PROMPT_COMMAND setup)
-    if [[ -n "$ITERM_SESSION_ID" && \
-              -r "${HOME}/.iterm2/shell_integration.bash" ]]; then # Note; non-standard ~/.iterm2 path
-        _PROMPT_COMMAND="${PROMPT_COMMAND}"
-        # iterm shell integration interferes with other uses of PROMPT_COMMAND
-        # see https://gitlab.com/gnachman/iterm2/-/issues/7961
-        is_defined _direnv_hook && precmd_functions+=(_direnv_hook)
-        # shellcheck disable=SC1091
-        . "${HOME}/.iterm2/shell_integration.bash"
-    else
-        : # Running _direnv_hook makes no sense here: is_defined _direnv_hook && _direnv_hook
-    fi
 
     # Hack for direnv/iterm/.bashrc PROMPT_COMMAND ';;' still needed?
     # An issue seen in emacs shell and Terminal exec bash
