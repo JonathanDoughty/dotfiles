@@ -53,7 +53,7 @@ _is_type mman 'function' || mman() {
 }
 
 for _f in 'add_to_my_path' 'ppath' 'rpath'; do
-    # I don't think this is really lazy loading but I'm too lazy yakshave further
+    # I don't think this is really lazy loading but I'm too lazy to yakshave further
     # shellcheck disable=SC1091
     is_defined "${_f}" || source /dev/stdin <<-EOF
 	${_f}() {
@@ -138,15 +138,15 @@ else
 fi
 
 lr () {  # list recent files
-    [[ -n $ZSH_VERSION ]] && emulate -L sh # blunt foorce word splitting
-    local _color_arg
+    [[ -n $ZSH_VERSION ]] && emulate -L sh # blunt force word splitting
+    declare -a  _color_args
     if [[ -e "${HOMEBREW_PREFIX}"/bin/lsd ]]; then
-        _color_arg="--color always"
+        _color_args=( --color always )
     else                        # standard ls and eza:
-        _color_arg="--color=always"
+        _color_args=( --color=always )
     fi
-    # shellcheck disable=SC2012,SC2086  # using ls function is the point, ignore glob complaint
-    ls -lrt $_color_arg "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
+    # shellcheck disable=SC2012,SC2068  # using ls function is the point, ignore glob complaint
+    ls -lrt ${_color_args[@]} "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
 }
 
 type rg &>/dev/null && \
