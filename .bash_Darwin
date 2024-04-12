@@ -19,7 +19,8 @@ fi
 # Provide a function to dismount my CM sparsebundle
 # See login_actions.sh
 dismount_cm () {
-    local pids
+    local pids sparse_volume
+    sparse_volume="$(command df "${CM_DIR:-/path/to/volume/contents}" | awk '/\/dev/ {print $NF}')"
     declare -i p
     # Signal processes (other than this one) accessing sparse bundle
     pids=$(lsof "$sparse_volume" | awk 'NR>1 {print $2}' | grep -v $$ | sort -u)
