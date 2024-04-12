@@ -33,6 +33,9 @@ use_logical_path = false
 [gcloud]
 disabled = true
 
+[golang]
+disabled = true
+
 [git_branch]
 format = '[$symbol$branch(:$remote_branch)]($style) '
 
@@ -56,6 +59,11 @@ disabled = true
 
 [python]
 disabled = true
+
+[shell]
+disabled = false
+bash_indicator = 'b'
+zsh_indicator = 'z'
 
 [username]
 show_always = true
