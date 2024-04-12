@@ -60,8 +60,7 @@ _integrations () {
         MANPATH="${MANPATH%%+(:)}"; export MANPATH # brew's shellenv appends extra :
         eval "$extglob"
 
-        # shellcheck disable=SC2031 # I don't see how this is modifing _verbose in a subshell
-        [[ "${_verbose:-0}" -gt 0 ]] && \
+        [[ "${_verbose:-0}" -gt 1 ]] && \
             printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
 
         # If bash_completions is installed...

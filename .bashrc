@@ -3,8 +3,8 @@
 
 [[ -z "$PS1" ]] && return  # Not interactive? Do nothing
 
-declare -i _verbose=0
-declare -i _debug=0
+declare -i _verbose=0           # 1 - report externals; 2 - more details
+declare -i _debug=0             # 1 - currently unused; 2 - some execution traces
 
 [[ "$_debug" -gt 1 && -n "${INSIDE_EMACS}" ]] && set -x
 
@@ -331,5 +331,8 @@ _main() {
           _define_from _functions _external_defs _aliases _path_additions \
           "${FUNCNAME[0]}"
 }
+
+# possibly useful
+#trap 'printf "%s:%d\n" "${FUNCNAME[0]}" "$LINENO"' DEBUG
 
 _main "$@"

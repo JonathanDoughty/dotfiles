@@ -51,9 +51,7 @@ function emr {
     emc -e "(view-file \"$*\")"
 }
 
-case ${0##*/} in
-    (dash|-dash|bash|-bash|ksh|-ksh|sh|-sh|zsh|-zsh) ;; # being sourced to define functions only
-    (*)
-        # shellcheck disable=SC2068  # bare $@ is the point
-        emc $@ ;; # this file executed as a script? pass arguments to the emacsclient wrapper
-esac
+# Any arguments? Then invoke emacsclient with them
+if [[ ${#@} -gt 1 ]]; then
+    emc "$@"
+fi

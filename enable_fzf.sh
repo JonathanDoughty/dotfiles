@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # enable_fzf - fuzzy finder configuration
 
-[[ $_ != "$0" ]] || { printf "%s must be sourced to be useful." "$0"; exit 1; }
 type fzf &>/dev/null || return 1
+is_sourced || return 1          # from shell-funcs.sh
 
 # Control whether my preferences override normal fzf behavior
 _override_completions=1
