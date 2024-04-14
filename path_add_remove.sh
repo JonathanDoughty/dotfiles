@@ -30,6 +30,7 @@ remove_path_duplicates() {
     done
     vprintf 2 "\nNew PATH:\n%s\nwas:\n%s\n" "${newPath//:/$'\n'}" "${PATH//:/$'\n'}"
     PATH=$newPath
+    IFS=$oldIFS
 }
 
 ppath () {

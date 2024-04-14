@@ -9,11 +9,7 @@ _override_completions=1
 _override_bindings=1
 _override_options=1
 
-# Note: I use a patched version of fzf linked from ~/.local/bin
-# to avoid complaints related to https://github.com/junegunn/fzf/issues/3721
 if [[ ${BASH_VERSINFO[0]} -gt 3 ]]; then # in bash's more recent than macOS's
-    # For further debugging
-    #eval "$(${FZF_EXE:-fzf} --bash | tee fzf_bash"${_fzf_debug}".sh)"
     eval "$(fzf --bash)"
 elif [[ -n "$ZSH_VERSION" ]]; then
     eval "$(fzf --zsh)"
