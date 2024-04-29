@@ -3,17 +3,16 @@
 
 [[ -z "$PS1" ]] && return  # Not interactive? Do nothing
 
-declare -i _verbose=0           # 1 - report externals; 2 - more details
-declare -i _debug=0             # 1 - currently unused; 2 - some execution traces
-
-[[ "$_debug" -gt 1 && -n "${INSIDE_EMACS}" ]] && set -x
-
 # System definitions
 if [[ -f /etc/bashrc ]]; then
     # shellcheck disable=SC1091
     . /etc/bashrc
 fi
 
+[[ "$EUID" -eq 0 ]] && return   # avoid all this if root
+
+declare -i _verbose=0           # 1 - report externals; 2 - more details
+declare -i _debug=0             # 1 - currently unused; 2 - some execution traces
 # Minor optimization frequently used in other scripts
 : export "${HOSTNAME:=$(hostname -s)}"
 
@@ -156,16 +155,15 @@ _environment_setup() {
 
             export EDITOR=vi    # sadly emacs isn't everywhere by default
             export VISUAL=${EDITOR}
-            # Don't let git look above hone or my CM area
             local CM
             CM=$(realpath "${HOME}/CM" 2>/dev/null)
-            GIT_CEILING_DIRECTORIES="${HOME}${CM:+:}${CM}"
-            export GIT_CEILING_DIRECTORIES
+            # Don't let git look above home or my CM area
+            export GIT_CEILING_DIRECTORIES="${HOME}${CM:+:}${CM}"
             export RIPGREP_CONFIG_PATH=${HOME}/.ripgreprc # rc file not automatic considered silly
             export SUDO_PS1='# '
             export TIMEFORMAT=$'\nreal:\t%R\nuser:\t%U\nsystem:\t%S\ncpu:\t%P%%'
 
-            # Color preferences
+            # Color preferences - belongs in _terminal_setup or external though does perturb environment
             local SCRIPT_SRC
             if is_defined dircolors ; then
                 SCRIPT_SRC=$(script_source "my.dircolors")
@@ -173,14 +171,6 @@ _environment_setup() {
                 [[ -e ${SCRIPT_SRC} ]] && eval "$(dircolors "${SCRIPT_SRC}")"
                 export LS_COLORS
             fi
-
-            # Pick up brew's shell environment additions early
-            for d in "/opt/homebrew" "/home/linuxbrew" "/usr/local"; do
-                if [ -e "${d}/bin/brew" ]; then
-                    eval "$(${d}/bin/brew shellenv)"
-                    break
-                fi
-            done
 
             # bash always resets PATH; overload ENV_SET
             ENV_SET=$PATH; export ENV_SET
