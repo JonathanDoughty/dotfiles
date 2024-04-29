@@ -190,11 +190,17 @@ up () {
     up "$1"
 }
 
-ssh () {
-    # restore title after ssh ends
-    command -p ssh "$@"
-    set_tab_title "$_last_tab_title"
-}
+case "$TERM_PROGRAM" in
+    (*Term*)                    # does this handle all the display applications?
+        ssh () {
+            # restore title after ssh ends
+            command -p ssh "$@"
+            set_tab_title "$_last_tab_title"
+        }
+        ;;
+    (*)
+        ;;
+esac
 
 if [[ "$TERM_PROGRAM" == "WezTerm" ]]; then
     # wezterm's working directory handling interferes with my personal preference
