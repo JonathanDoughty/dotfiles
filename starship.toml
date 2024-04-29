@@ -54,11 +54,16 @@ disabled = false
 [os.symbols]
 Macos = ' ' # plainer '' - broken in some nerdfonts; alternative: '⌘'
 
+[package]
+format = '[$symbol]($style) '
+disabled = false
+
 [perl]
 disabled = true
 
 [python]
-disabled = true
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+disabled = false
 
 [shell]
 disabled = false
@@ -66,5 +71,6 @@ bash_indicator = 'b'
 zsh_indicator = 'z'
 
 [username]
+disabled = false
 show_always = true
-format = '[$user]($style) '
+format = '[]($style) '
