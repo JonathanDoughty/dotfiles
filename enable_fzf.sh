@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # enable_fzf - fuzzy finder configuration
 
-type fzf &>/dev/null || return 1
+type fzf &>/dev/null || return 1 # skip if fzf is unavailable
 is_sourced || return 1          # from shell-funcs.sh
 
 # Control whether my preferences override normal fzf behavior
 _override_completions=1
 _override_bindings=1
 _override_options=1
+
+# --[shell] option used below added in version 49; this breaks when fzf hits 1.0
+fzf --version | awk -F . '{ if( $2 > 48) exit 0 ; else exit 1; }' || return 1
 
 if [[ ${BASH_VERSINFO[0]} -gt 3 ]]; then # in bash's more recent than macOS's
     eval "$(fzf --bash)"
