@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # Actions to set up standard applications on login
 
-# This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
-# app which I run as a Login item
-
 # I create a 40GB, Case sensitive, APFS sparsebundle where most of git repos
 # and other work lives. Why? See https://stackoverflow.com/a/12085233/1124740
 sparsebundle="${HOME}/CM.sparsebundle"
+
+if [[ -z "$CM_DIR" ]]; then
+    # Try to insure minimal environment, e.g., if running from Login item
+    # shellcheck disable=SC1090
+    . ~/.envrc                  # what direnv would normlly run
+fi
 sourcedir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives
+
+# This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
+# app which I run as a Login item.
 app_script="${HOME}/Applications/LogInScript.app/Contents/Resources/script"
-verbose=1
+
+verbose=0
 log=
 [ $verbose -gt 1 ] && log=~/login_actions.txt
 
