@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Actions to set up standard applications on login
+# Actions to set up standard macOS applications on login
 
 # I create a 40GB, Case sensitive, APFS sparsebundle where most of git repos
 # and other work lives. Why? See https://stackoverflow.com/a/12085233/1124740
@@ -92,32 +92,35 @@ check_scripts_sources () {
 # Initializations that depend on contents of the sparsebundle
 
 ssh_identities () {
-    # Add identities so that all clients of ssh-agent have access to those.
-    # It appears that Ventura has added functionality to ssh-add such that if
-    # no agent exists but the socket does, that an ssh-agent process is spawned.
+    # Add identities so that all clients of ssh-agent have access to those. Ventura added
+    # functionality to ssh-add such that if no agent exists but the socket does, then an
+    # ssh-agent process is spawned. For Linux see ssh_start_agent.sh.
 
     # If you get "No identity found in the keychain." then you'll need to
     # (cd ~/.ssh; ssh-add --apple-use-keychain [private key files])
 
-    if [ -S "$SSH_AUTH_SOCK" ]; then
+    local cmd
+    cmd=/usr/bin/ssh-add        # use native ssh, no e.g., brew alternatives
+    if [[ -S "$SSH_AUTH_SOCK" ]]; then
         [ $verbose -gt 1 ] && \
             printf "ssh-agent processes:\n%s\n" "$(pgrep -l ssh-agent)" && \
             printf "SSH_AUTH_SOCK's owner: %s\n" "$(lsof -t "$SSH_AUTH_SOCK")"
-        if ! /usr/bin/ssh-add -l &>/dev/null ; then
-            # Sierra+ enables adding identities with passphrases stored in Keychain via
+        if ! $cmd -l &>/dev/null ; then
+            # Sierra+ enabled adding identities with passphrases stored in Keychain via
             # ssh-add --apple-use-keychain
             # ssh-add --apple-load-keychaion will add all local keys with Keychain passwords
             (                   # In a subshell
                 builtin cd ~/.ssh || exit
-                /usr/bin/ssh-add -q --apple-load-keychain --apple-use-keychain
+                $cmd -q --apple-load-keychain --apple-use-keychain
             )
             [ $verbose -gt 0 ] && \
-                printf "The following identities are available to ssh agent %s\n" "${SSH_AUTH_SOCK##*/}"
+                printf "The following identities are available to ssh via %s\n" "$SSH_AUTH_SOCK"
         else
             [ $verbose -gt 0 ] && \
                 printf "ssh identities already added\n"
         fi
-        ssh-add -l | awk '{printf "\t%s\n", $3}'
+        # shellcheck disable=SC2046 # word splitting desired listing keys
+        $cmd -l | basename $(cut -d ' ' -f 3)
     else
         printf "No ssh-agent socket present\n"
     fi

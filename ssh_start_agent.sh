@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# start_ssh_agent
+# ssh_start_agent
 
 # Inspired by https://stackoverflow.com/questions/18880024/start-ssh-agent-on-login
+# For macOS, see login_actions.sh:ssh_identities()
+
 ssh_start_agent () {
-    if [[ ${BASHVERSINFO[1]} -lt 5 ]]; then
-        # shellcheck disable=SC2046 # start clean construct for bash 4 unset issue
-        eval $(echo unset $(echo -n $(env | grep -o '^SSH_[^=]*' | tr '\n' ' ')))
-    else
-        # shellcheck disable=SC2046 # works for bash and zsh
-        unset $(env | grep -o '^SSH_[^=]*' | tr '\n' ' ') # start clean
-    fi
-    local ssh_dir="${HOME}/.ssh"
+    local vars
+    vars="$(env | grep -o '^SSH_[^=]*')"
+    vars="${vars//[$'\t\n\r']}"  # deal with bash 4 unset issue
+    # shellcheck disable=SC2086  # word splitting desired
+    unset $vars                  # start with environment cleaned of SSH_ vars
+    local ssh_dir="${HOME}/.ssh" # you probably don't want to change this
 
     if [[ ! -e "$ssh_dir" ]]; then
         mkdir -p "$ssh_dir"
