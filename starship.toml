@@ -64,11 +64,14 @@ disabled = true
 [python]
 format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
 disabled = false
+detect_extensions = []
+# prevent random .py files, eg., in ~/Documents, from triggering
 
 [shell]
-disabled = false
 bash_indicator = 'b'
 zsh_indicator = 'z'
+disabled = true
+# helpful when debbuging bash vs. zsh compatibility
 
 [username]
 disabled = false
