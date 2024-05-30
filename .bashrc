@@ -95,51 +95,59 @@ _functions() {
 _path_additions() {
     [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
 
-    # Start by sanitizing previously set PATH (*cough* path_helper & /etc/paths.d/*)
-    declare -a ORIGINAL_PATH
-    local oldIFS=$IFS
-    IFS=:
-    read -r -a ORIGINAL_PATH <<<"$PATH"
-    IFS=$oldIFS
-    # shellcheck disable=SC2123  # because PATH is what will be sanitized / added to
-    PATH=
-    add_to_my_path "${ORIGINAL_PATH[@]}"
+    local post_external_additions=${#}
 
-    # Order matters below: additions made later, at front of PATH, take precedence
-    add_to_my_path /usr/local/share/bin
-    add_to_my_path /usr/local/bin
+    case "$post_external_additions" in
+        (0)    # Start by sanitizing previously set PATH (*cough* path_helper & /etc/paths.d/*)
+            declare -a ORIGINAL_PATH
+            local oldIFS=$IFS
+            IFS=:
+            read -r -a ORIGINAL_PATH <<<"$PATH"
+            IFS=$oldIFS
+            # shellcheck disable=SC2123  # because PATH is what will be sanitized / added to
+            PATH=
+            add_to_my_path "${ORIGINAL_PATH[@]}"
 
-    # Machine specific paths
-    case ${OSTYPE} in
-    (darwin*)
-        if [[ -n "$HOMEBREW_PREFIX" ]]; then
-            add_to_my_path "${HOMEBREW_PREFIX}/"{bin,sbin} # move before standards
-            add_to_my_path "${HOMEBREW_PREFIX}"/opt/coreutils/bin # GNU replacements for standards
-        fi
-         # Prefer manually maintained Python over homebrew's dependency updated one
-        add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
-        ;;
-    (linux*)
-        # I don't typically do these any more
-        #add_to_my_path /usr/psql-*/bin   # PostgreSQL
-        #add_to_my_path /snap/bin         # snaps
-        #add_to_my_path /opt/local/apache-maven-*/bin  # Java
-        ;;
-    (cygwin*)
-        # Historical reference / Windows brag
-        if [[ -r /cygdrive/c ]]; then
-            PATH=/usr/bin:${PATH}
-            # Don't confuse Cygwin with MS's Unix
-            if [[ -r /cygdrive/c/SFU/common ]]; then
-                rpath /cygdrive/c/SFU/common/ # what?
+            # Order matters below: additions made later, at front of PATH, take precedence
+            add_to_my_path /usr/local/share/bin
+            add_to_my_path /usr/local/bin
+
+            # Machine specific paths
+            case ${OSTYPE} in
+                (darwin*)
+                    ;;
+                (linux*)
+                    # Left for reference, I don't typically use these any more
+                    #add_to_my_path /usr/psql-*/bin   # PostgreSQL
+                    #add_to_my_path /snap/bin         # snaps
+                    #add_to_my_path /opt/local/apache-maven-*/bin  # Java
+                    ;;
+                (cygwin*)
+                    # Historical reference / Windows brag
+                    if [[ -r /cygdrive/c ]]; then
+                        PATH=/usr/bin:${PATH}
+                        # Don't confuse Cygwin with MS's Unix
+                        if [[ -r /cygdrive/c/SFU/common ]]; then
+                            rpath /cygdrive/c/SFU/common/ # what?
+                        fi
+                    fi
+                    ;;
+            esac
+            ;;
+        (*)       # Paths to override standards, externals, and framework specific contents.
+            if [[ -n "$HOMEBREW_PREFIX" ]]; then
+                add_to_my_path "${HOMEBREW_PREFIX}/"{bin,sbin} # move before standards
+                add_to_my_path "${HOMEBREW_PREFIX}"/opt/coreutils/bin # GNU standard replacements
             fi
-        fi
-        ;;
-    esac
 
-    # Paths whose contents I want to override standards and framework specific contents
-    add_to_my_path "${HOME}/CM/Base/bin" "${HOME}/CM/Base/$(uname -s)"
-    add_to_my_path "${HOME}/.local/bin"
+            # I prefer manually maintained Python over homebrew's dependency updated one
+            add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
+            # My utilities
+            add_to_my_path "${HOME}/CM/Base/bin" "${HOME}/CM/Base/$(uname -s)"
+            # Platform specific installations
+            add_to_my_path "${HOME}/.local/bin"
+            ;;
+    esac
     [[ "$_verbose" -gt 1 ]] && printf "augmented/re-ordered PATH: %s\n" "$PATH"
 }
 
@@ -310,10 +318,12 @@ _main() {
         _path_additions         # standard paths including ~/.local/bin for external_defs
     fi
 
-    _interactive_options "$@" # external_defs (e.g., fzf) rely on set -o emacs/vi
-    _external_defs          # relies on _path_additions above
-    _terminal_setup         # some rely on external_defs, e.g., ssh agent check
-    cd . || return          # side-effect: function defs for crutches; initialize tab title & prompt
+    _interactive_options "$@"        # external_defs (e.g., fzf) rely on set -o emacs/vi
+    _external_defs                   # relies on _path_additions above
+    _terminal_setup                  # some rely on external_defs, e.g., ssh agent check
+    _path_additions "post externals" # final path revisions
+
+    cd . || return     # side-effect: function defs for crutches; initialize tab title & prompt
 
     # Clear variables/functions not intended for further use
     unset -v _verbose _debug

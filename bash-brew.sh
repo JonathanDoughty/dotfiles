@@ -30,7 +30,7 @@ __bash_brew_usage=$(declare -f -p _bash_brew_usage) # redefine from global varia
 
 _homebrew_setup () {
     # allowing for early definition of HOMEBREW_PREFIX
-    local candidates d HOMEBREW_DIR
+    local candidates d HOMEBREW_DIR HOMEBREW_ENV
     candidates=("$HOMEBREW_PREFIX" # Already defined?
                 "/opt/homebrew"
                 "/home/linuxbrew"
@@ -41,10 +41,13 @@ _homebrew_setup () {
             case "$PATH" in
                 (*${HOMEBREW_DIR}/bin*)
                     # Exclude adding to PATH since already present
-                    eval "$("${HOMEBREW_DIR}"/bin/brew shellenv | sed '/ PATH/d')" ;;
+                    HOMEBREW_ENV="$("${HOMEBREW_DIR}"/bin/brew shellenv | sed '/ PATH/d')"
+                    ;;
                 (*)
-                    eval "$("${HOMEBREW_DIR}"/bin/brew shellenv)" ;;
+                    HOMEBREW_ENV="$("${HOMEBREW_DIR}"/bin/brew shellenv)"
+                    ;;
             esac
+            eval "$HOMEBREW_ENV"
             break
         fi
     done
@@ -61,7 +64,7 @@ _integrations () {
         eval "$extglob"
 
         [[ "${_verbose:-0}" -gt 1 ]] && \
-            printf "%s: PATH:%s\nMANPATH: %s\n" "${BASH_SOURCE[0]##*/}" "$PATH" "$MANPATH"
+            printf "[%s]: PATH:%s\nMANPATH: %s\n" "${FUNCNAME[0]}" "$PATH" "$MANPATH"
 
         # If bash_completions is installed...
         if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]
