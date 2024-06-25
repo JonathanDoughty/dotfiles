@@ -100,15 +100,15 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
 
         eval "$__bash_brew_usage" # define usage again locally
 
-        _check_brew_python () {
+        _check_python () {
             [[ -n "$BASH_VERSION" ]] && python_path="$(type -p python3)"
             [[ -n "$ZSH_VERSION" ]] && python_path="$(whence python3)"
             # Check that brew will use homebrew's own python
             # See https://docs.brew.sh/Homebrew-and-Python#virtualenv
             if [[ "$python_path" != "${HOMEBREW_PREFIX}/bin/python3" ]]; then
-                echo "$python_path"
+                echo "$python_path" # return the path to the default, non-brew python3
             else
-                echo ""
+                echo ""         # python3 is brew's
             fi
         }
 
@@ -138,15 +138,19 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
         case ${1} in  # wrapper defined brew verbs
             (install)
                 # Don't believe me? Read https://docs.brew.sh/Homebrew-and-Python
-                python_path="$(_check_brew_python)"
-                if [[ "${python_path}" == "" ]]; then
+                python_path="$(_check_python)"
+                if [[ "$python_path" == "" ]]; then
                     "${HOMEBREW_PREFIX}"/bin/brew "$@"
                 else
                     (
-                        PATH=${HOMEBREW_PREFIX}/bin:${PATH}
+                        PATH=${HOMEBREW_PREFIX}/bin:${PATH}; export PATH
                         printf "Installing in subshell, python3 here was %s now %s\n" \
-                               "${python_path}" "$(type -p python3)"
-                        [[ "$(_check_brew_python)" == "" ]] && "${HOMEBREW_PREFIX}"/bin/brew "$@"
+                               "$python_path" "$(_check_python)"
+                        if [[ "$(_check_python)" == "" ]]; then
+                            "${HOMEBREW_PREFIX}"/bin/brew "$@"
+                        else
+                            printf "Cowardly refusing as python3 is still %s\n" "$(_check_python)"
+                        fi
                     )
                 fi
                 ;;
@@ -174,7 +178,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
         esac
 
         # No need for these outside
-        [[ -n "$_debug" ]] || unset -f _check_brew_python _check_outdated _bash_brew_usage
+        [[ -n "$_debug" ]] || unset -f _check_python _check_outdated _bash_brew_usage
     }
 fi
 
