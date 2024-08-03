@@ -195,7 +195,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
     files=(
         "brew-integration.sh"    # homebrew related
         "docker-funcs.sh"
-        "bash-emacs.sh"          # shell emacs access
+        "emacsclient.sh"         # shell emacs access
         "enable_fzf.sh"          # fuzzy finder
         "bash-go.sh"             # golang dev
         "disable-bash-office.sh"
