@@ -86,7 +86,6 @@ _functions() {
     # Other common functions
     _define_from shell-funcs.sh
     _define_from path_add_remove.sh
-
 }
 
 # Generate/re-order PATH based on directories that actually exist on this machine
@@ -109,6 +108,8 @@ _path_additions() {
             # Order matters below: additions made later, at front of PATH, take precedence
             add_to_my_path /usr/local/share/bin
             add_to_my_path /usr/local/bin
+            # My utilities - needed pre-externals because some external defs pick up scripts from here
+            add_to_my_path "${HOME}/CM/Base/bin" "${HOME}/CM/Base/$(uname -s)"
 
             # Machine specific paths
             case ${OSTYPE} in
@@ -140,8 +141,6 @@ _path_additions() {
 
             # I prefer manually maintained Python over homebrew's dependency updated one
             add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
-            # My utilities
-            add_to_my_path "${HOME}/CM/Base/bin" "${HOME}/CM/Base/$(uname -s)"
             # Platform specific installations
             add_to_my_path "${HOME}/.local/bin"
             ;;
@@ -195,7 +194,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
     [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
     files=(
         "bash-brew.sh"           # homebrew related
-        "disable-bash-docker.sh"
+        "docker-funcs.sh"
         "bash-emacs.sh"          # shell emacs access
         "enable_fzf.sh"          # fuzzy finder
         "bash-go.sh"             # golang dev
