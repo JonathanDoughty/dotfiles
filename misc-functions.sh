@@ -36,19 +36,19 @@ _is_type () {
 # Stubs for functions redefined on first use from external definitions.
 # (as long as they haven't been previously redefined already.)
 
-_is_type cd 'builtin' && cd() {
+_is_type cd 'builtin' && cd () {
     lazy_load_from directory-functions.sh "$@" "quiet"
 }
 
-_is_type up 'function' || up() {
+_is_type up 'function' || up () {
     lazy_load_from up_directory.sh "$@"
 }
 
-_is_type man 'function' || man() {
+_is_type man 'function' || man () {
     lazy_load_from man_page_viewer.sh "$@"
 }
 
-_is_type mman 'function' || mman() {
+_is_type mman 'function' || mman () {
     lazy_load_from man_page_viewer.sh "$@"
 }
 
@@ -56,13 +56,13 @@ for _f in 'add_to_my_path' 'ppath' 'rpath'; do
     # I don't think this is really lazy loading but I'm too lazy to yakshave further
     # shellcheck disable=SC1091
     is_defined "${_f}" || source /dev/stdin <<-EOF
-	${_f}() {
+	${_f} () {
 	   lazy_load_from path_add_remove.sh "\$@";
 	}
 	EOF
 done
 
-ssh_start_agent() {
+ssh_start_agent () {
     if [[ -n "$BASH_VERSION" ]]; then
         lazy_load_from "${FUNCNAME[0]}.sh" "$@"
     elif [[ -n "$ZSH_VERSION" ]]; then
@@ -149,8 +149,10 @@ lr () {  # list recent files
     ls -lrt ${_color_args[@]} "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
 }
 
-type rg &>/dev/null && \
+if type rg &>/dev/null ; then
     rgd () { rg -. "$@"; }       # ripgrep dot files too
+    rgi () { rg -. --no-ignore "$@"; }       # and ignore any .gitignore files
+fi
 
 which () {  # tell how argument will be interpreted
     builtin alias "$@" 2>/dev/null \
@@ -189,11 +191,66 @@ _macos_funcs () {
 
     # provide a function to eject mounted volumes like linux has
     eject () {
-        [[ $_debug -gt 0 ]] && trap "set +x" RETURN && set -x
-        printf "ejecting %s ..." "${1}"
-        hdiutil detach "${1}"
+        local DEV v target OP
+        OP="unmount"
+        OPTERR=1; OPTIND=1  # reset getopts
+        while getopts "have" flag; do
+            case "$flag" in
+                (h) cat <<EOF
+${FUNCNAME[0]} [-a -e -h -v] volume - Unmount mounted volumes
+
+Options:
+-a  - unmount all disks on same device
+-e  - eject rather than unmount
+-v  - be verbose about it
+-h  - this help text
+
+EOF
+                    return
+                    ;;
+                (a) # eject all filesystems on same disk
+                      DEV=1
+                      ;;
+                  (e) OP="eject"
+                  (v) # be verbose
+                      trap "set +x" RETURN && set -x
+                      ;;
+                  (\?)
+                      printf "Error parsing %s from %s\n" "$OPTARG" "$@"
+                      ;;
+                  (*) ;;        # satisfy shellcheck
+              esac
+        done
+        shift "$((OPTIND - 1))"
+        
+        target="$1"
+        # Determine filesystem disk device number that $target mounts from
+        [[ -n "$DEV" ]] && \
+            DEV="$(command df | command grep "$target" | command cut -f 1 -d ' ' | command sed 's/s[0-9]*$//g')"
+        printf "%sing %s ...\n" "$OP" "$target"
+        diskutil "$OP" "$target" &> /dev/null
+        case $? in
+            (0) ;;
+            (16)
+                # Hey macOS, why do you report an error for
+                printf "WTF? error %d for %s of %s\n" "$?" "$OP" "$target" 1>&2
+                ;;
+            (*)
+                printf "diskutil returned %d %sing %s\n" "$?" "$OP" "$target" 1>&2
+                ;;
+        esac
+
+        if [[ -n "$DEV" ]]; then
+            # Get remaining filesystems on same device
+            for v in $(command df | command grep "^$DEV" | command cut -f 1 -d ' '); do
+                [[ $VERBOSE -gt 0 ]] && printf "ejecting associated %s ...\n" "$v"
+                if ! diskutil "$OP" "$v" ; then
+                    printf "Error %d %sing %s\n" $? "$OP" "$v" && break
+                fi
+            done
+        fi
     }
-    if [[ -n "$BASH_VERSION" ]]; then # bash command completion for the lazy typer
+    if [[ -n "$BASH_VERSION" ]]; then # bash command completion for eject
         __mounted_vols () {
             # shellcheck disable=SC2207  # I do want to split the output
             COMPREPLY+=($(compgen -W "$(mount | sed -n '/ \/Volumes/p' | cut -d ' ' -f 3)" -- "$cur"))
@@ -232,7 +289,7 @@ _macos_funcs () {
     }
 
     _is_type "time_machine_local" "file" && \
-        tml() {
+        tml () {                    # for the lazy typer, assuming the script is in PATH by now
             time_machine_local "$@" # start local time machine update script
         }
 
@@ -274,4 +331,4 @@ case ${OSTYPE} in
         _linux_funcs
         ;;
 esac
-unset _debug _is_type _macos_funcs _linux_funcs _f
+unset _debug _macos_funcs _linux_funcs _f _is_type
