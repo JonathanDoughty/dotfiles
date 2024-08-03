@@ -59,8 +59,18 @@ if [[ $_override_options -gt 0 ]]; then
         export FZF_DEFAULT_COMMAND='fd --type f --color=never'
         export FZF_ALT_C_COMMAND='fd --type d . --color=never'
     elif [[ $(type -f rg 2>/dev/null) ]]; then
-        export FZF_DEFAULT_COMMAND='rg --files --hidden --smartcase --glob "!.git/*"'
-        #export FZF_DEFAULT_COMMAND='rg --files --smartcase'
+        if false ; then
+            # This recommended setup causes me shell start issues
+            # See https://github.com/junegunn/fzf/issues/1750
+            RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+            INITIAL_QUERY=""
+            FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
+                               fzf --bind "change:reload:$RG_PREFIX {q} || true" \
+                               --ansi --phony --query "$INITIAL_QUERY"
+        else
+            export FZF_DEFAULT_COMMAND='rg --files --hidden --smartcase --glob "!.git/*"'
+            #export FZF_DEFAULT_COMMAND='rg --files --smartcase'
+        fi
     fi
 fi
 

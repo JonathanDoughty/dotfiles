@@ -212,6 +212,8 @@ _external_defs() { # functions, etc. related to local installs, external set up
     for f in "${files[@]}"; do
         # source the ones that exist
         _define_from "$f"
+        [[ "$_verbose" -gt 0 ]] &&
+            printf "\nDefined external defs from %s\n\n" "$f"
     done
 }
 

@@ -10,12 +10,12 @@ case ${OSTYPE} in
 esac
 
 if [[ -n "$BASH_VERSION" ]]; then
-    for f in "${APP_DIR}"/etc/*bash*-completion; do
-        . "$f"
+    for cf in "${APP_DIR}"/etc/*bash*-completion; do
+        . "$cf"
     done
 elif [[ -n "$ZSH_VERSION" ]]; then
-    for f in "${APP_DIR}"/etc/*zsh*-completion; do
-        . "$f"
+    for cf in "${APP_DIR}"/etc/*zsh*-completion; do
+        . "$cf"
     done
 fi
 
@@ -126,4 +126,4 @@ function docker-formatted-info () {
 
 dfi ()  { docker-formatted-info "$@" ; }
 
-unset APP_DIR f
+unset APP_DIR cf
