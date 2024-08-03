@@ -54,7 +54,6 @@ _functions() {
             if [[ "$2" = "quiet" ]]; then # strip the 'quiet' last argument
                 set -- "${@:1:$(($#-1))}"
             fi
-            # shellcheck disable=SC1090
             . "${SCRIPT}"
             declare -f "${REDEFINED_FUNCTION}" > /dev/null
             if [[ $? ]]; then
@@ -75,7 +74,6 @@ _functions() {
         local EXT_CMDS
         EXT_CMDS="$(script_source "$@" )"
         if [[ -e "$EXT_CMDS" ]]; then
-            # shellcheck disable=SC1090
             source "$EXT_CMDS"
             [[ "$_verbose" -gt 0 ]] && printf "sourced definition from %s\n" "$1" 1>&2
             return 0

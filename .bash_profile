@@ -32,21 +32,18 @@ fi
 
 # Generic aliases and functions
 if [ -f ~/.bashrc ]; then
-    # shellcheck disable=SC1090
     source ~/.bashrc
 fi
 
 # System specific settings
 OS_SETTINGS=~/.bash_$(uname -s)
 if [ -f "$OS_SETTINGS" ]; then
-    # shellcheck disable=SC1090
     source "$OS_SETTINGS"
 fi
 
 # Host specific settings
 HOST_SETTINGS=~/.bash_$(hostname -s)
 if [ -f "$HOST_SETTINGS" ]; then
-    # shellcheck disable=SC1090
     source "$HOST_SETTINGS"
 fi
 

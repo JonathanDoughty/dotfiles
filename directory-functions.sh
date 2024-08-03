@@ -184,7 +184,6 @@ up () {
         # shellcheck disable=SC2296,SC2086  # since this is zsh interpreted
         __SCRIPT="$(dirname ${(%):-%x})/${__SCRIPT}"
     fi
-    # shellcheck disable=SC1090
     . "${__SCRIPT}"
     # then call the replacement version
     up "$1"

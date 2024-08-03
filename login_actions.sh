@@ -7,7 +7,6 @@ sparsebundle="${HOME}/CM.sparsebundle"
 
 if [[ -z "$CM_DIR" ]]; then
     # Try to insure minimal environment, e.g., if running from Login item
-    # shellcheck disable=SC1090
     . ~/.envrc                  # what direnv would normlly run
 fi
 sourcedir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives

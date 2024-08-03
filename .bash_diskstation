@@ -2,7 +2,6 @@
 # bash initializations for Synology
 
 SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")"
-# shellcheck disable=SC1090
 test -f "${SAME_DIR}/git-completion.bash" && . "$_"
 unset SAME_DIR
 

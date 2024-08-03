@@ -38,7 +38,6 @@ function virtualenv_setup {
             PATH=/usr/local/bin:/usr/bin:${PATH} pip=$(command -v pip3)
             PIP_REQUIRE_VIRTUALENV="" ${pip} "$@"
         }
-        # shellcheck disable=SC1090
         . "${VIRTUALENVWRAPPER_PATH}"
     elif [ ! -e "${WORKON_HOME}" ]; then
         printf "\nNo WORKON_HOMRE directory; retry when one has been created or export WORKON_HOME=/path/to/where\n"

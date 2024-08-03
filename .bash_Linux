@@ -6,6 +6,5 @@
 export HOMEBREW_NO_ENV_FILTERING=1
 
 SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")" # generally this is a symlink
-# shellcheck disable=SC1090
 test -f "${SAME_DIR}/ssh_start_agent.sh" && . "$_"
 unset SAME_DIR

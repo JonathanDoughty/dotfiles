@@ -1,0 +1,11 @@
+#! ~/.shellcheckrc
+# See https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Be extra pedantic
+#enable=all
+
+# Most sourced files are in the same directory as script
+source-path=SCRIPTDIR
+
+# Never warn about following variable sources either
+disable=SC1090

@@ -259,6 +259,7 @@ app_rcfiles () {
     link_if_not_present "${DOT_PATH}/.gituser"
     link_if_not_present "${DOT_PATH}/.lessfilter"
     link_if_not_present "${DOT_PATH}/.ripgreprc"
+    link_if_not_present "${DOT_PATH}/.shellcheckrc"
     link_if_not_present "${DOT_PATH}/.tmux.conf"
     link_if_not_present "${DOT_PATH}/.tmux"
 }
@@ -305,7 +306,6 @@ install () {
     if [[ -e "$CUSTOM" ]]; then
         if [[ "$SKIP_SENSITIVE" -eq 0 ]]; then
             vprintf 1 "Sourcing %s" "$CUSTOM"
-            # shellcheck disable=SC1090
             ( . "$CUSTOM" )
         else
             vprintf 0 "Skipping %s" "$CUSTOM"
