@@ -193,7 +193,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
 
     [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
     files=(
-        "bash-brew.sh"           # homebrew related
+        "brew-integration.sh"    # homebrew related
         "docker-funcs.sh"
         "bash-emacs.sh"          # shell emacs access
         "enable_fzf.sh"          # fuzzy finder

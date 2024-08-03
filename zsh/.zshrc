@@ -73,8 +73,8 @@ if [[ "$ZSH_EVAL_CONTEXT" == "file" ]]; then
         "path_add_remove.sh"    # PATH manipulation
         "less_termcap.sh"       # PAGER setup
         "cli_prompt.sh"         # prompt glitz
-        "bash-brew.sh"
         "bash-emacs.sh"
+        "brew-integration.sh"
         "bash-tmux.sh"
         "enable_fzf.sh"
         "misc-functions.sh"     # includes lazy loads from others
