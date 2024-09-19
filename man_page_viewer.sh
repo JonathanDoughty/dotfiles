@@ -46,7 +46,7 @@ set_manpath() {
         # See man path_helper for setting initial system MANPATH
         mandirs+=(
             "/usr/share/man"    # Put built-in macOS man pages first
-            "$(eval "$(/usr/libexec/path_helper -h | grep MANPATH)"; echo "${MANPATH/: / }")"
+            "$(eval "$(/usr/libexec/path_helper | grep MANPATH)"; echo "${MANPATH/: / }")"
             "${JAVA_HOME:=$(/usr/libexec/java_home)/man}"
         )
         ;;
