@@ -6,8 +6,12 @@ case ${OSTYPE} in
         APP_DIR="/Applications/Docker.app/Contents/Resources"
         add_to_my_path "${APP_DIR}/bin"
         ;;
-    (*) ;;
+    (*)
+        APP_DIR=""
+        ;;
 esac
+
+type docker &>/dev/null || return 1 # skip remainder if no docker
 
 if [[ -n "$BASH_VERSION" ]]; then
     for cf in "${APP_DIR}"/etc/*bash*-completion; do
