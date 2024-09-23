@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# bash_brew.sh - brew related shell integration and aliases/functions
-# shellcheck disable=SC2317 # _bash_brew_usage defined at top level for visibility; redefined internally
+# brew-integration.sh - brew related shell integration and aliases/functions
+# shellcheck disable=SC2317 # usage defined at top level for visibility; redefined internally
 
-# YakShave: Flesh out the deps functionality
+# YakShave: Flesh out the _depends_on functionality
 
 if [[ -n "$ZSH_VERSION" ]]; then
     : # zsh accounted for
@@ -146,7 +146,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
             # YakShave: awk saving the leaves and then reporting whenever the dependency was seen?
             #trap "set +x" RETURN && set -x
             shift; shift
-            printf "brew deps on %s not impemented yet\n" "$*"
+            printf "brew deps on %s not implemented yet\n" "$*"
         }
 
         _graph () {
