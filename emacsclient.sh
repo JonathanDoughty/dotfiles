@@ -23,14 +23,14 @@ function emc {
     function _emc_find_emacs_socket () {
         # Find the socket that Emacs server will have started
         SOC=""
-        case ${OSTYPE} in
+        case "${OSTYPE%%[0-9.-]*}" in
             (darwin*)
-                # $APP won't work for EmacsForMacOS
-                # Sigh: we have to ignore errors that might come from mounted Time Machine volumes
-                SOC=$(lsof -w -c Emacs | grep 'server$' | awk '{print $(NF) }')
+                # Sigh: ignore errors that might come from mounted Time Machine volumes
+                SOC=$(lsof -w -c '/Emacs/i' | awk '/server$/ { print $(NF) }')
                 ;;
             (linux*)
-                SOC=$(lsof -c emacs | grep 'server$' | awk '{print $(NF) }') # untested
+                # Linux includes socket info following path
+                SOC=$(lsof -c '/emacs/i' | awk '/server / {print $(NF-2) }')
                 ;;
         esac
         printf "%s" "$SOC"
