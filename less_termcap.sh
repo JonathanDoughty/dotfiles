@@ -11,10 +11,11 @@
 #export GIT_PAGER=cat
 
 less_exports () {
-    if command -v lesspipe >/dev/null; then
-        eval "$(SHELL=/bin/sh lesspipe)"
+    if command -v lesspipe &>/dev/null; then
+        eval "$(SHELL=/bin/sh lesspipe)" # exports for LESSOPEN/LESSCLOSE
     elif [ -f "${HOME}/.lessfilter" ]; then
-        # Leverage the same lesspipe extension mechanism
+        # Attempt to leverage the same lesspipe extension mechanism
+        # https://stackoverflow.com/a/33906025/1124740
         export LESSOPEN="|${HOME}/.lessfilter %s"
     fi
     # https://stackoverflow.com/a/19871578/1124740 warns about
@@ -23,23 +24,19 @@ less_exports () {
     export LESSHISTFILE=/dev/null
 }
 
-if  command -v bat >/dev/null; then
-    more () { bat "$@"; }       # Long term muscle memory -> current modern tool
-    export PAGER=bat
-    less_exports   # bat uses less for paging
-#elif  command -v moar >/dev/null; then # see https://github.com/walles/moar
-    :
-elif command -v less >/dev/null; then
-    export PAGER=less
-    more () { less "$@"; }      # the original, after all
-    less_exports
-else
-    export PAGER=more
-fi
+for cmd in bat batcat moar less more; do       # Linux renames bat due to collision
+    if  command -v "$cmd" &>/dev/null; then
+        PAGER="$(command -v $cmd)"
+        export PAGER
+        more () { "$PAGER" "$@"; } # Long term muscle memory -> current modern tool
+        less_exports   # bat/batcat uses less for paging
+        break
+    fi
+done
 
 unset -f less_exports
 
-command -v tput 1>/dev/null || return 1  # no tput on, e.g., Synology
+command -v tput &>/dev/null || return 1  # no tput on, e.g., Synology
 
 # Adapted from https://unix.stackexchange.com/a/147
 
