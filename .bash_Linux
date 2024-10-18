@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # .bash_Linux
-# Linux specific login items
+# Linux specific login configuration
 
 # brew on Linux has an issue with locales
 export HOMEBREW_NO_ENV_FILTERING=1
 
+# Ensure admin CLI commands are in fallback PATH, allowing local overrides
+[[ "$PATH" =~ '/usr/sbin' ]] || PATH="${PATH}":/usr/sbin
+
+# I use/prefer local email get delivered in Maildir format
+[[ -e ~/Maildir ]] && export MAIL=~/Maildir
+
+# insure ssh-agent is running
 SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")" # generally this is a symlink
 test -f "${SAME_DIR}/ssh_start_agent.sh" && . "$_"
 unset SAME_DIR

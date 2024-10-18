@@ -1,6 +1,8 @@
 #!/bin/bash
+# shellcheck disable=SC2034  # seemingly unused/unexported variables
 # bash initializations for Synology
 
+# possibly integrate git-completion
 SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")"
 test -f "${SAME_DIR}/git-completion.bash" && . "$_"
 unset SAME_DIR
@@ -13,3 +15,22 @@ test -f ~/.dircolors && eval "$(dircolors "$_" )"  # colored output is too hard 
 # System default HOSTNAME is not fqdn, make it so
 HOSTNAME=$(nslookup "$(hostname)" | awk '/Name:/ { print $2 }')
 export HOSTNAME
+
+# Locate XDG directories on larger volume
+XDG_BASE=/volume1/"${USER}"/XDG # XDG_BASE is my base directory, not standard
+XDG_DATA_HOME=${XDG_BASE}/data
+#export XDG_CONFIG_HOME=${XDG_BASE}/.config # I think this stays small enough
+XDG_CACHE_HOME=${XDG_BASE}/cache
+#XDG_RUNTIME_DIR=${XDG_BASE}/runtime # Little used, with security implications
+XDG_STATE_HOME=${XDG_BASE}/state
+
+# Insure their existance and permissions
+for i in $(set | grep XDG | sort); do
+    e=${i%=*}; d=${!e}          # Note bash indirect expansion
+    if [[ ! -e "${d}" ]]; then
+        mkdir -p "${d}"
+    fi
+    chmod 0700 "${d}"
+    export "${e}"="${d}";
+done
+unset e i d
