@@ -7,11 +7,12 @@
 # requires ble.sh https://github.com/akinomyoga/ble.sh for bash, with far reaching consequences
 #right_format = """$all"""
 
-add_newline = false             # I like minimal 
+add_newline = false             # I like minimal
+continuation_prompt = '▶▶ '
 
 [character]
-success_symbol = '[:](bold fg:green)'
 error_symbol = '[✗](bold fg:red)'
+success_symbol = '[▶](bold fg:green)'
 
 [line_break]
 disabled = true                 # I like old style
@@ -30,6 +31,17 @@ use_logical_path = false
 [directory.substitutions]
 '/Volumes/CM' = 'CM'
 
+[direnv]
+format = '[$symbol$loaded]($style) '
+symbol = "e"
+loaded_msg = "󰄲"
+unloaded_msg = "✗"
+disabled = true                 # seems to cause line editting corruption
+
+[docker_context]
+format = '[$symbol]($style) '
+disabled = false
+
 [gcloud]
 disabled = true
 
@@ -37,7 +49,19 @@ disabled = true
 disabled = true
 
 [git_branch]
-format = '[$symbol$branch(:$remote_branch)]($style) '
+#format = '[$symbol$branch(:$remote_branch)]($style) '
+format = '[$symbol$branch]($style) '
+style = 'bold purple'
+
+[git_status]
+disabled = false
+style = 'bold purple'
+
+[java]
+format = '[$symbol]($style) '
+[localip]
+disabled = true
+ssh_only = false
 
 [lua]
 format = '[$symbol]($style)'
@@ -73,7 +97,20 @@ zsh_indicator = 'z'
 disabled = true
 # helpful when debbuging bash vs. zsh compatibility
 
+[sudo]
+disabled = false
+format = '[$symbol]($style) '
+style = 'bold red'
+symbol = "#"
+
 [username]
 disabled = false
 show_always = true
-format = '[]($style) '
+format = '[$user]($style) '
+aliases = { "jwd" = "" }
+
+[custom.foo]                    # example as a reminder
+command = 'echo foo' # shows output of command
+detect_files = ['foo'] # can specify filters but wildcards are not supported
+#when = ''' test "$HOME" = "$PWD" '''
+format = '[$output ]($style)'

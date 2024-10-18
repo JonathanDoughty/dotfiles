@@ -224,43 +224,10 @@ _terminal_setup() {
         return                  # avoid terminal adaptation in IDE consoles
     fi
 
-    # For embedding in prompt; adapted from internet sources
-    parse_git_branch() {
-        # Want more glitz? see https://github.com/magicmonty/bash-git-prompt
-        local ref
-        ref=$(git symbolic-ref HEAD 2> /dev/null)
-        echo "(""${ref#refs/heads/}"")"
-    }
-
-    local HLITE="\[\033[0;96m\]" # High intensity cyan
-    local YELLOW="\[\033[0;33m\]"
-    local NONE="\[\033[0m\]"
-    case $TERM in
-        (dumb)  # i.e., emacs shell; see also .emacs.d/init_${SHELL}.sh
-            [ "${BASH/*bash}" == "" ] && \
-                PS1="${HLITE}\W${YELLOW}\$(parse_git_branch)${NONE}\\$ "
-            export PAGER='cat'
-            ;;
-        (xterm*|dtterm*|linux|screen*|*256*)
-            if ! _define_from "cli_prompt.sh" ; then
-                # Embed working directory in prompt and terminal window title
-                if [ "${BASH/*bash}" == "" ] && [ $EUID -ne 0 ]; then
-                    PS1="${HLITE}${HOSTNAME%%[-.]*} \W${YELLOW} \$(parse_git_branch)${NONE} $ "
-                    PROMPT_COMMAND="${PROMPT_COMMAND};echo -ne ${SSH_CONNECTION:+${HOSTNAME%%[-.]*}:} ${PWD##*/}: "
-                fi
-                [ "$TERM" == "linux" ] && export TERM=xterm # OSX
-            fi
-            ;;
-        (*)
-            eval "$(tset -s)" # whoa, old school
-            [ "${BASH/*bash}" != "" ] && [ $EUID != 0 ] && PS1="\W\$(parse_git_branch)\\$ "
-            ;;
-    esac
-
     # Terminal control related external definitions
     local files f
-
     files=(
+        "cli_prompt.sh" # setup prompt based on user choice
         "enable_direnv.sh"
         "iterm_integration.sh"
     )

@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-# command line prompt glitz
-# Selects from implementation based on:
-# https://github.com/starship/starship
-# https://github.com/justjanne/powerline-go if present
-# https://github.com/riobard/bash-powerline
+# Set up command line prompt glitz and naintaining full CLI history file.
+# Also works in zsh.
 
-# Order determines preference as determined by _prompt_setup
-# starship configured via starship.toml; other below
-_PROMPT_SELECTIONS=( "starship" "powerline-go" "_bash_powerline")
+# Selects from implementations based on:
+# * https://github.com/starship/starship - if installed
+# * https://github.com/justjanne/powerline-go - if installed
+# * https://github.com/riobard/bash-powerline - modified version below
+# * Ancient tradition - from back in the day, and for dumb terminals
+
+# This consolidates various command line prompt setup utilities and settings I've tried / lived
+# with over decades. The order below determines which gets set up, as determined by the first one
+# recognized by _prompt_setup, except in the case of dumb terminals that always use traditional.
+
+_PROMPT_SELECTIONS=( "starship" "powerline-go" "_bash_powerline" "_traditional")
+_COLOR_THEME="base16-solarized-dark.sh" # see themes/*.sh
+_THEME_DIR="$(dirname "${BASH_SOURCE[0]}")/themes"
+_CLI_HISTORY=~/.full_history
 
 if [[ -z "$_PS_SYMBOL" ]]; then # OS identifying symbol
     case "$(uname)" in
@@ -18,22 +26,22 @@ if [[ -z "$_PS_SYMBOL" ]]; then # OS identifying symbol
     export _PS_SYMBOL
 fi
 
-# powerline-go arguments, you might prefer others.
+# For powerline-go these are my preferences; you might prefer others.
 # Order matters, at least wrt bash and the -modules* lines
 _PLG_OPTIONS=(
-        "-mode patched -theme default -max-width 30"
-        "-shell-var _PS_SYMBOL"
-        "-cwd-mode fancy -cwd-max-depth 2"
-        "-modules host,ssh,cwd,perms,exit,shell-var"
-        "-modules-right venv,git,direnv"
-        "-hostname-only-if-ssh"
-        "-git-mode fancy"
-        "-path-aliases /Volumes/CM/Active=CM"  # where almost all my git repos live
+    "-mode patched -theme default -max-width 30"
+    "-shell-var _PS_SYMBOL"
+    "-cwd-mode fancy -cwd-max-depth 2"
+    "-modules host,ssh,cwd,perms,exit,shell-var"
+    "-modules-right venv,git,direnv"
+    "-hostname-only-if-ssh"
+    "-git-mode fancy"
+    "-path-aliases /Volumes/CM/Active=CM"  # where almost all my git repos live
 )
 _PLG_ARGS="${_PLG_OPTIONS[*]}"  # as a single string
 if [[ -n "${BASH_VERSION}" ]]; then
     _PLG_EXE="$(type -p powerline-go)"
-    # Bash doesn't support -modules-right, collapse those into modules
+    # Bash doesn't support right prompt, collapse those into modules
     _PLG_ARGS="${_PLG_ARGS/ -modules-right /,}"
     # and as long as that's the case, if there is a max-width then
     # push powerline to a newline, increasing the max width
@@ -118,7 +126,8 @@ _bash_powerline() {
     POWERLINE_DIR="\W"
 
     __powerline() {
-        # Colorscheme
+        # Color scheme
+        # ToDo: check this with what _color_setup does
         readonly RESET='\[\033[m\]'
         readonly COLOR_CWD='\[\033[0;35m\]' # magenta
         readonly COLOR_GIT='\[\033[0;36m\]' # cyan
@@ -202,6 +211,26 @@ _bash_powerline() {
     unset __powerline
 }
 
+_traditional() {
+    # For embedding git info in prompt; adapted from internet sources
+    parse_git_branch() {
+        # Want more glitz? see https://github.com/magicmonty/bash-git-prompt
+        local ref
+        ref=$(git symbolic-ref HEAD 2> /dev/null)
+        echo "(""${ref#refs/heads/}"")"
+    }
+
+    # Embed working directory in prompt
+    local HLITE="\[\033[0;96m\]" # High intensity cyan
+    local YELLOW="\[\033[0;33m\]"
+    local NONE="\[\033[0m\]"
+
+    if [ "${BASH/*bash}" == "" ] && [ $EUID -ne 0 ]; then
+        # Include simople hostname in ssh connections
+        PS1="${HLITE}${SSH_CONNECTION:+${HOSTNAME%%[-.]*}} \W${YELLOW} \$(parse_git_branch)${NONE} $ "
+    fi
+}
+
 _prompt_setup() {
     # Determine which of prompt mechanisms is available and initialize
     local exe
@@ -210,19 +239,25 @@ _prompt_setup() {
     for p in "${_PROMPT_SELECTIONS[@]}"; do
         exe=$(type "$p" 2>/dev/null | head -1)
         if [[ -n "$exe" ]]; then
-            exe=${exe//* /} # just the full path to the executable (or that it's a function)
+            #exe=${exe//* /} # just the full path to the executable (or that it's a function)
             case "$exe" in
                 (*powerline-go*)
-                    [[ -n "$ZSH_VERSION" ]] && _zsh_powerline-go
                     [[ -z "$ZSH_VERSION" ]] && _bash_powerline-go
+                    [[ -n "$ZSH_VERSION" ]] && _zsh_powerline-go
                     break
                     ;;
                 (*starship*)
-                    [[ -n "$ZSH_VERSION" ]] && eval "$($exe init zsh)"
-                    [[ -z "$ZSH_VERSION" ]] && eval "$($exe init bash)"
+                    if [[ -z "$ZSH_VERSION" ]]; then
+                        # I haven't figured out whether to use eat's own prompt handling
+                        [[ "$INSIDE_EMACS" =~ .*eat.* ]] && \
+                            printf "Using eat shell prompt annotation\n" && return
+                        eval "$(starship init bash)"
+                    else
+                        eval "$(starship init zsh)"
+                    fi
                     break
                     ;;
-                ('function')
+                (*bash_powerline*)
                     if [[ -z "$ZSH_VERSION" ]]; then
                         _bash_powerline
                     else
@@ -236,7 +271,11 @@ _prompt_setup() {
                     fi
                     break
                     ;;
+                (*traditional*)
+                    _traditional
+                    ;;
                 (*)
+                    printf ""
                     break
                     ;;
             esac
@@ -245,8 +284,82 @@ _prompt_setup() {
     [[ -z "$exe" ]] && printf "None of %s found for prompt\n" "${_PROMPT_SELECTIONS[*]}"
 }
 
-_prompt_setup
+_color_setup() {
+    # I use Tinted scripts https://github.com/tinted-theming/tinted-shell/blob/main/scripts/
+    # YakShave: test/adopt https://github.com/tinted-theming/tinty
+    local theme="${_THEME_DIR}/${_COLOR_THEME}"
+    [[ -e "$theme" ]] && source "$theme"
+}
 
-# clean up
-_funcs=(_zsh_powerline-go _bash_powerline _bash_powerline-go _prompt_setup)
-unset -f "${_funcs[@]}" ; unset -v _funcs
+_command_history_setup() {
+    # Record all CLI work
+
+    : ${_CLI_HISTORY:=~/.full_history}
+    [[ -e "$_CLI_HISTORY" ]] || printf "Host PWD PID Timestamp           Cmd\n" > "${_CLI_HISTORY}"
+
+    : "${HOSTNAME:=$(hostname -s)}" # insure HOSTNAME is set
+
+    # Adapted from https://www.jefftk.com/p/logging-shell-history-in-zsh
+    _full_history() {
+        local _entry _pwd
+        # declare -a _prefixes # ToDo replacements in addition to $HOME -> ~
+        local HISTTIMEFORMAT="%Y-%m-%dT%H:%M:%S "
+        if [[ -z "$ZSH_VERSION" ]]; then
+            _entry="$(history 1)"
+            _pwd="${PWD/#${HOME}/\~}"
+        else
+            _entry="$(history -t "$HISTTIMEFORMAT" -1)"
+            _pwd="${PWD/#${HOME}/~}"
+        fi
+        _entry="${_entry/# *([0-9])  /}"  # remove history number and surrounding spaces
+        printf "%s %s %s %s\n" "${HOSTNAME}" "${_pwd}" "$$" "${_entry}" \
+               >> "${_CLI_HISTORY}"
+    }
+
+    # Run that (once) at the conclusion of each command
+    # (extra checks prevent adding twice while debugging)
+    if [[ -z "$ZSH_VERSION" ]]; then
+        [[ ${PROMPT_COMMAND} =~ .*_full_history.* ]] || \
+            PROMPT_COMMAND="${PROMPT_COMMAND}${PROMPT_COMMAND:+;}_full_history"
+    else
+        # shellcheck disable=SC2128 # This will be executed in zsh
+        [[ ${precmd_functions} =~ .*_full_history.* ]] || \
+            precmd_functions+=(_full_history)
+    fi
+
+    histgrep() {                # look for pattern in full history
+        local matches=10
+        if [[ "$#" == 0 ]]; then
+            printf "Usage %s [max # entries] pattern\n" "${FUNCNAME[0]}"
+            return
+        elif [[ "$1" =~ ^[0-9]*$ ]]; then
+            matches="$1" && shift
+        fi
+        # occurances of pattern in history
+        grep "$@" "$_CLI_HISTORY" | tail -n "$matches"
+        # ToDo: use rg/ripgrep if available
+    }
+}
+
+# How shall the prompt be handled for this terminal type?
+case $TERM in
+    (dumb)  # i.e., emacs shell; see also .emacs.d/init_${SHELL}.sh
+        _traditional
+        export PAGER='cat'
+        ;;
+    (xterm*|dtterm*|linux|screen*|*truecolor*|*256*)
+        _color_setup
+        _prompt_setup
+        ;;
+    (*)
+        printf "TERM %s not recognized, see %s\n" "$TERM" "${BASH_SOURCE[0]}"
+        ;;
+esac
+
+_command_history_setup
+
+# clean up: no need for these once sourced
+_funcs=(_zsh_powerline-go _bash_powerline _bash_powerline-go _traditional _prompt_setup \
+                          _color_setup
+                          _command_history_setup)
+unset -f "${_funcs[@]}" ; unset -v _funcs _PROMPT_DSELECTIONS _COLOR_THEME _THEME_DIR
