@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# bash-emacs - helpers for command line interaction with *the* editor
+# emacsclient - helpers for command line interaction with *the* editor
+# These also work in zsh.
 
 function emc {
-    # This assumes that the user's init sequence includes (server-start)
+    # Because I frequently use different versions of Emacs I want to insure that the
+    # emacsclient this uses is correctly paired with the running version.
+
     local SOC # path to Emacs' server socket
 
     function _emc_start_emacs () {
@@ -11,6 +14,7 @@ function emc {
         if [ ! -e "$SOC" ]; then
             case ${OSTYPE} in
                 (darwin*)
+                    # This assumes Emacs' init sequence, like mine, includes (server-start)
                     osascript -e "tell application \"Emacs\" to activate"
                     ;;
                 (linux*)
@@ -21,7 +25,7 @@ function emc {
     }
 
     function _emc_find_emacs_socket () {
-        # Find the socket that Emacs server will have started
+        # Find the socket that Emacs server is using
         SOC=""
         case "${OSTYPE%%[0-9.-]*}" in
             (darwin*)
@@ -39,7 +43,7 @@ function emc {
     function _emc_wait_for_server_response () {
         declare -i TIMER=1
         while [[ ! -e "$SOC" ]]; do
-            # Look for whatever socket Emacs has open
+            # Look for Emacs' server socket
             SOC=$(_emc_find_emacs_socket)
             if [[ -z "$SOC" ]]; then
                 printf "Waiting %d seconds for Emacs to create server socket\n" "$TIMER"
@@ -59,28 +63,32 @@ function emc {
         done
     }
 
-    function _emc_find_client () {
-        # Find the emacsclient associated with the running Emacs
-        local EPATH="" process client=""
+    function _emc_find_emacs_pid () {
+        local process_name pid
         case ${OSTYPE} in
             (darwin*)
-                process="Emacs"
+                process_name="Emacs"
                 ;;
             (linux*)
-                process="emacs"
+                process_name="emacs"
                 ;;
         esac
         # Within Emacs shell, on macOS, pgrep doesn't find the Emacs process
-        # Possibly https://unix.stackexchange.com/a/100759/13887 ?
-        #EPATH=$(ps -fp $(pgrep "$process") | tail -1 | awk '{print $NF}')
-        # alternately, unchecked on Linux
-        #EPATH=$(killall -s "$process") | awk '{print $NF}')
-        # shellcheck disable=SC2009
-        EPATH=$(ps aux | grep $process | grep -v grep | awk '{print $NF}')
-        # Traverse filesystem hierarchy looking for client
-        while [[ "${EPATH%/*}" != "" && "$client" == "" ]]; do
-            client="$(find "${EPATH%/*}" -name emacsclient)"
-            EPATH="${EPATH%/*}"
+        # Possibly the bug described https://unix.stackexchange.com/a/100759/13887
+        # Use lsof instead.
+        pid="$(lsof -w -c "/$process_name/i" -t)"
+        echo "$pid"
+    }
+
+    function _emc_find_client_path () {
+        # Find the emacsclient associated with the running Emacs
+        local emacs_path="" pid client=""
+        pid="$1"
+        emacs_path="$(ps -fp "$pid" | awk 'NR>1 {printf "%s", $NF}')"
+        # Find the companion emacsclient in the filesystem hierarchy
+        while [[ "${emacs_path%/*}" != "" && "$client" == "" ]]; do
+            client="$(find "${emacs_path%/*}" -name emacsclient)"
+            emacs_path="${emacs_path%/*}"
         done
         echo "$client"
     }
@@ -100,13 +108,26 @@ function emc {
 
     _emc_start_emacs
 
-    local CLIENT
-    CLIENT=$(_emc_find_client)
+    local CLIENT pid
+    pid="$(_emc_find_emacs_pid)"
+    CLIENT=$(_emc_find_client_path "$pid")
     if [ -n "$CLIENT" ]; then
         _emc_wait_for_server_response
 
         # shellcheck disable=SC2068 # Send each array element as separate argument
         "$CLIENT" -s "$SOC" -n -a \"\" $@
+
+        # And focus Emacs
+        case "$OSTYPE" in
+            (darwin*)
+                osascript -e "tell application \"Emacs\" to activate"
+                ;;
+            (linux*)
+                if type wmctrl &>/dev/null; then
+                    wmctrl -ia "$pid"
+                fi
+                ;;
+        esac
     else
         printf "Can't find emacsclient to open %s\n" "$@"
     fi
@@ -116,6 +137,10 @@ function emr {
     # Open files read-only
     emc -e "(view-file \"$*\")"
 }
+
+# shellcheck disable=SC1091 # eat - Emulate a Terminal
+[[ -n "$EAT_SHELL_INTEGRATION_DIR" ]] && \
+    source "$EAT_SHELL_INTEGRATION_DIR/${SHELL##*/}"
 
 # Any arguments? Then invoke emacsclient with them
 if [[ ${#@} -gt 1 ]]; then
