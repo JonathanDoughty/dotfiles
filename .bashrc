@@ -206,7 +206,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
         "disable-switch_java.sh"         # java dev
         "bash-dev.sh"            # miscellaneous development
         "bash-misc.sh"           # miscellaneus stubs and helpers
-        "misc-functions.sh"      # crutches I've grown to depend on
+        "misc-functions.sh"      # crutches I've grown to depend on, including lazy loaded overrides
         "less_termcap.sh"        # PAGER & related functions & preferences
     )
     for f in "${files[@]}"; do
@@ -235,7 +235,6 @@ _terminal_setup() {
         # source the ones that exist
         _define_from "$f"
     done
-
 
     # See https://emacs.stackexchange.com/q/2573/5146 wrt Emacs shell-mode
     # Note old bash version syntax for macOS native bash compatibility
@@ -289,7 +288,9 @@ _main() {
     _terminal_setup                  # some rely on external_defs, e.g., ssh agent check
     _path_additions "post externals" # final path revisions
 
-    cd . || return     # side-effect: function defs for crutches; initialize tab title & prompt
+    cd . || return              # NB: not builtin cd
+    # Side-effect: lazy load function definitions for overrides and initialize tab title & prompt;
+    # this is way too obscure.
 
     # Clear variables/functions not intended for further use
     unset -v _verbose _debug

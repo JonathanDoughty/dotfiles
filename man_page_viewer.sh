@@ -10,8 +10,6 @@ else
         { printf "%s must be sourced to be useful.\n" "$0"; exit 1; }
 fi
 
-: "${OS:=$(uname -s)}"          # rather than the builtin OSTYPE for historical reasons
-
 if type add_to_my_path &>/dev/null ; then
     # shellcheck disable=SC1091
     [[ -z ${ZSH_VERSION} ]] && . "$(dirname "${BASH_SOURCE[0]}")/path_add_remove.sh"
@@ -21,9 +19,7 @@ fi
 
 set_manpath() {
     # ferret out where man pages are on different systems
-    if [[ -n "$ZSH_VERSION" ]]; then
-        emulate -L bash
-    else
+    if [[ -z "$ZSH_VERSION" ]]; then
         # bash's trap works differently
         [[ "$VERBOSE" -gt 1 ]] && trap "set +x" RETURN && set -x
     fi
@@ -36,35 +32,38 @@ set_manpath() {
         add_to_my_path "${@//:/ }"
         MANPATH="$PATH"
         PATH="$OLD_PATH"
-        [[ -n "$VERBOSE" ]] && printf "MANPATH: %s\n" "${MANPATH//:/ }"
+        [[ "$VERBOSE" -gt 0 ]] && printf "MANPATH: %s\n" "${MANPATH//:/ }"
     }
 
     local mandirs=()
     export ORIGINAL_MANPATH=${MANPATH} # remember this has been done
-    case ${OS} in
-    (Darwin)
+    case ${OSTYPE} in
+    (darwin*)
         # See man path_helper for setting initial system MANPATH
+        local helper_man
+        helper_man="$(eval "$(/usr/libexec/path_helper | grep MANPATH)"; echo "${MANPATH}")"
+        printf "helper_man:%s\n" "${helper_man//:/ }"
         mandirs+=(
             "/usr/share/man"    # Put built-in macOS man pages first
-            "$(eval "$(/usr/libexec/path_helper | grep MANPATH)"; echo "${MANPATH/: / }")"
+            "${helper_man//:/ }"
             "${JAVA_HOME:=$(/usr/libexec/java_home)/man}"
         )
         ;;
-    (Linux)                    # generally most will be in man.config
+    (linux*)                    # generally most will be in man.config
         mandirs+=(
             "${JAVA_HOME:=/opt/local/java}"/man
             /usr/share/man /opt/local/man /usr/lib/perl5/man
             /opt/local/share/man
                  )
         ;;
-    (Cygwin)                    # Historical reference
+    (cygwin*)                   # Historical reference
         if [ -r /cygdrive/c ]; then
             mandirs+=(
                 /usr/share/man
             )
         fi
         ;;
-    (SunOS|IRIX|HPUX)           # Showing off old experience
+    (sunos*|irix*|hpux*)        # Showing off old experience
         mandirs+=(
             /opt/SUNWspro/man /usr/openwin/man /usr/dt/man
             /usr/catman /usr/contrib/man # SGI, HP
@@ -75,11 +74,12 @@ set_manpath() {
             /usr/afsws/man
         )
         ;;
+    (*)
+        ;;
     esac
     if [ -n "${mandirs[*]}" ]; then
         # first the man equivalents to PATH; this picks up some extras
-        # The / expression is bash specific
-        [ "${BASH/*bash}" == "" ] && add_to_man_path "${PATH//bin/man}"
+        [[ -z ${ZSH_VERSION} ]] && add_to_man_path "${PATH//bin/man}"
         # Then the other candidates from above
         add_to_man_path "${mandirs[@]}"
         export MANPATH
@@ -112,8 +112,6 @@ man() {
 mman() {
     # Generally I prefer a separate viewer app
 
-    # zsh still does not like something in here - maybe this should be -L ksh like it was?
-    [ -n "${ZSH_VERSION}" ] && emulate -L bash
     local -i VERBOSE
     local flag
 
@@ -145,11 +143,12 @@ mman() {
 
     # Insure MANPATH is sane before invoking viewer the first time. It is not clear if this
     # environment change accomplishes anything anyway, especially if the app was already
-    # started.
+    # started. And, in zsh, this is not working correctly.
+
     [[ -n "${ORIGINAL_MANPATH}" ]] || set_manpath
 
-    case ${OS} in
-        (Darwin)
+    case ${OSTYPE} in
+        (darwin*)
             if [[ -e /Applications/Dash.app || -e ~/Applications/Dash.app ]]; then
                 _dash "$@"
             else
@@ -158,7 +157,7 @@ mman() {
                 command man -t "$@" | open -f -a Preview
             fi
             ;;
-        (Linux)
+        (linux*)
             if [ -n "${DISPLAY}" ]; then
                 if [ -n "${VERBOSE}" ]; then
                     echo "yelp man:$1"
@@ -169,9 +168,12 @@ mman() {
                 man "$@"
             fi
             ;;
+        (*)
+            printf "who am I, why am I here?\n"
+            ;;
     esac
 }
 if [[ -n "$ORIGINAL_MANPATH" ]]; then # in case this is re-sourced
     MANPATH=$ORIGINAL_MANPATH
-    export -n ORIGINAL_MANPATH
+    typeset -x ORIGINAL_MANPATH
 fi

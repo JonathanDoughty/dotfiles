@@ -11,6 +11,7 @@ add_to_my_path () {
 
 remove_path_duplicates() {
     # Implemented without the associative arrays to be macOS /bin/bash compatible
+    [[ -n "${ZSH_VERSION}" ]] && emulate -L ksh
     local oldIFS newPath p
     oldIFS=$IFS
     IFS=:

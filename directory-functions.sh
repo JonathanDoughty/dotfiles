@@ -55,7 +55,7 @@ set_tab_title () {
 }
 
 update_title_with_directory () {
-    [ -n "$ZSH_VERSION" ] && emulate -L bash
+    [ -n "$ZSH_VERSION" ] && emulate -L ksh
     # Window title remembers first, non-Home, and current directory
     # Since the first is generally why I created this window/tab in the first place
     local prefix
@@ -80,20 +80,11 @@ update_title_with_directory () {
 }
 
 update_term_title () {
-    if [ -z "${ZSH_VERSION}" ]; then
-        update_title_with_directory "$@"
-    else
-        if type 'precmd' 2>/dev/null | grep -q 'function'; then
-            :
-        else
-            precmd() {   # Should this be chpwd? See zsh FAQ
-                update_title_with_directory "$@"
-            }
-        fi
-    fi
+    update_title_with_directory "$@"
 }
 
 cd () {
+
     # cd + show current directory in titlebar
     case $# in
         (0) builtin cd "$@" || return ;;
@@ -105,18 +96,20 @@ cd () {
                     shift
                     up "${arg:-1}" "$*"
                     ;;
-                (\?|-\?|-h) cat <<-EOF
-		${FUNCNAME[0]} ^# - change to directory # up the tree
-		${FUNCNAME[0]} - - change to previous directory
-		${FUNCNAME[0]} path - change to path
-EOF
+                (\?|-\?|-h)
+                    printf "\
+        cd ^# - change to directory # up the tree
+        cd - - change to previous directory
+        cd path - change to path
+	%s remembered as \$l == ~-
+" "$OLDPWD"
                      ;;
                 (*) builtin cd "$@" || return ;;
             esac
             ;;
         (*) builtin cd "$@" || return ;;
     esac
-    l="$PWD"
+    l="$OLDPWD"
     update_term_title "$@"
 }
 
@@ -137,14 +130,15 @@ pd () {
                     pushd -n "${PWD}" &>/dev/null # quietly duplicate the current PWD on DIRSTACK
                     up "${arg:-1}" "$*"
                     ;;
-                (\?) cat <<-EOF
-		${FUNCNAME[0]} # - swap current directory with dirstack entry #
-		${FUNCNAME[0]} ^# - push PWD on dirstack and go up #
-		${FUNCNAME[0]} path - push PWD on dirstack and make path curent
+                (\?|-\?|-h)
+                    printf "\
+        pd # - swap current directory with dirstack entry #
+        pd ^# - push $PWD on dirstack and go up #
+        pd path - push $PWD on dirstack and make path curent
 
-                $OLDPWD remembered as $l == ~-
-EOF
-                     ;;
+	%s remembered as \$l == ~-
+" "$OLDPWD"
+                    ;;
                 (*) pushd "$@" || return ;;
             esac
     esac
@@ -164,6 +158,7 @@ pop () {
         (0) popd || return ;;
         (*) popd "$@" || return ;;
     esac
+    # shellcheck disable=SC2034 # The point is to have a single letter variable for OLDPWD
     l="$OLDPWD"
     update_term_title "$PWD"
 }
