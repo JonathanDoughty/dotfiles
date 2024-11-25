@@ -17,8 +17,8 @@ _bash_brew_usage () {
     cat <<EOF
 As defined in $THIS_SOURCE - wrappers around brew operations
 
-brew install - ensure brew installation happen with brew's own python
-brew upgrade - refuse tpo upgrade all packages
+brew install - ensure brew installation happens with brew's own python
+brew upgrade - refuse to upgrade all packages
 brew [check|updatep|upgradep] - list only the outdated leaf packages
 brew deps on [package] - list leaves that depend on package
 brew deps graph - generate a visualization of leaves' dependencies
@@ -37,9 +37,9 @@ _homebrew_setup () {
     local candidates d HOMEBREW_DIR HOMEBREW_ENV
     # allow for earlier definition of HOMEBREW_PREFIX
     candidates=("$HOMEBREW_PREFIX" # Already defined?
-                "/opt/homebrew"
-                "/home/linuxbrew"
-                "/usr/local")
+                "/opt/homebrew"``            # Apple silicon default
+                "/home/linuxbrew/.linuxbrew" # Current brew on linux default
+                "/usr/local")                # Intel macOS default
     for d in "${candidates[@]}"; do
         if [[ -e "${d}/bin/brew" ]]; then
             HOMEBREW_DIR="$d"
@@ -50,10 +50,19 @@ _homebrew_setup () {
                     HOMEBREW_ENV="$("${HOMEBREW_DIR}"/bin/brew shellenv | sed '/ PATH/d')"
                     ;;
                 (*)
+                    # eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
                     HOMEBREW_ENV="$("${HOMEBREW_DIR}"/bin/brew shellenv)"
                     ;;
             esac
             eval "$HOMEBREW_ENV"
+            # brew should always use its own python3; set up bootstrap
+            if [[ ! -e "${HOMEBREW_PREFIX}/bin/python3" ]]; then
+                setup_homebrew_python() {
+                    command brew install python3
+                }
+                printf "brew should have its own python, see %s\nRun setup_homebrew_python to do so\n" \
+                       "https://docs.brew.sh/Homebrew-and-Python#virtualenv"
+            fi
             break
         fi
     done
@@ -110,7 +119,6 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
             [[ -n "$BASH_VERSION" ]] && python_path="$(type -p python3)"
             [[ -n "$ZSH_VERSION" ]] && python_path="$(whence python3)"
             # Check that brew will use homebrew's own python
-            # See https://docs.brew.sh/Homebrew-and-Python#virtualenv
             if [[ "$python_path" != "${HOMEBREW_PREFIX}/bin/python3" ]]; then
                 echo "$python_path" # return the path to the default, non-brew python3
             else
@@ -132,7 +140,9 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
                 # with possibly duplicate Brewfile
                 [[ -n "$_debug" ]] && trap "set +x" RETURN && set -x
                 # and lose direnv's report as directory is changed
-                builtin cd "$TMPDIR" 2>/dev/null || exit 0
+                # Debian no longer specifies TMPDIR but does XDG_RUNTIME_DIR with /tmp fallback
+                builtin cd "${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}" 2>/dev/null || \
+                    ( echo "No TMPDIR, exiting"; exit 0 )
                 command rm -f Brewfile
                 command brew bundle dump &>/dev/null
                 # shellcheck disable=SC2046  # we want separate arguments
@@ -158,8 +168,9 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
             if [[ -z "$dot" ]]; then
                 printf "Requires dot from \`brew install graphviz\`\n" && return
             else
-                local graph_file="${TMPDIR}/brew_graph.png"
+                local graph_file="${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}/brew_graph.png"
                 brew graph --installed --highlight-leaves | dot -Tpng -o"$graph_file"
+
                 open "$graph_file" 
             fi
         }
@@ -178,7 +189,8 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
                         if [[ "$(_check_python)" == "" ]]; then
                             "${HOMEBREW_PREFIX}"/bin/brew "$@"
                         else
-                            printf "Cowardly refusing as python3 is still %s\n" "$(_check_python)"
+                            printf "Cowardly refusing as python3 is still %s, please run %s\n" \
+                                   "$(_check_python)" "setup_homebrew_python"
                         fi
                     )
                 fi
