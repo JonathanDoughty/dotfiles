@@ -87,7 +87,9 @@ function emc {
         emacs_path="$(ps -fp "$pid" | awk 'NR>1 {printf "%s", $NF}')"
         # Find the companion emacsclient in the filesystem hierarchy
         while [[ "${emacs_path%/*}" != "" && "$client" == "" ]]; do
-            client="$(find "${emacs_path%/*}" -name emacsclient)"
+            # EmacsForMac RC includes multiple bin-* directories for separate $(uname -m)s
+            # Use the universal binary from bin/ (first we hope.)
+            client="$(find "${emacs_path%/*}" -name emacsclient | head -1)"
             emacs_path="${emacs_path%/*}"
         done
         echo "$client"

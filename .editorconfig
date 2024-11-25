@@ -57,8 +57,8 @@ indent_style = tab
 
 # direnv - does direnv-mode work better?
 [.envrc]
-file_type_emacs = sh
-file_type_ext = .sh
+#file_type_emacs = sh
+#file_type_ext = .sh
 
 # Indentation override for all JS under lib directory
 [lib/**.js]
