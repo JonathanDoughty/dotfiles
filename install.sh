@@ -53,6 +53,8 @@ INIT_PYTHON=1                   # Skip python related unless > 0
 
 declare -i VERBOSE=0 DRY_RUN=0 DEBUG=0 SKIP_SENSITIVE=0
 
+source "$DOT_PATH"/shell-funcs.sh # eat some of our own dog food
+
 trace() {
     # Help me debug some issues
     # Adapted from https://unix.stackexchange.com/a/529287/13887
@@ -67,13 +69,6 @@ trace() {
         '---'
     )
     printf '%s\n' "${_output_array[@]}" >&2
-}
-
-vprintf () {
-    # At verbosity >= first arg level output remainder to stderr
-    local level=$1 fmt="$2\n" && shift 2
-    # shellcheck disable=SC2059 # the point is to pass in fmt
-    [[ $VERBOSE -ge $level ]] && printf "$fmt" "$@" 1>&2
 }
 
 check_source () {
@@ -98,23 +93,6 @@ check_source () {
         if [[ ! -d "${RESULT_PATH%/*}" ]]; then
             mkdir -p "${RESULT_PATH%/*}" # insure debug directory hierarchy
         fi
-    fi
-}
-
-maybe () {
-    local cmd
-    declare -i level=3          # normally only print cmd at the most verbose
-    if [[ $1 =~ ^[0-9]$ ]]; then
-        # Treat leading digits as desired verbose level, not as part of command
-        level=$1
-        shift
-    fi
-    cmd=( "$@" )
-    if [[ $DRY_RUN -eq 0 ]]; then
-        vprintf $level "%s" "${cmd[*]}"
-        eval "${cmd[*]}"
-    else
-        vprintf 0 "%s" "${cmd[*]}"
     fi
 }
 
@@ -147,7 +125,7 @@ link_if_not_present () {
             vprintf 1 "Not replacing identical %s symlink" "${LINK_PATH}"
         fi
     else
-        vprintf 0 "WARNING: %s exists as file/directory; skipping" "${SOURCE}"
+        vprintf "WARNING: %s exists as file/directory; skipping" "${SOURCE}"
         return 1
     fi
 }
@@ -309,22 +287,23 @@ install () {
             vprintf 1 "Sourcing %s" "$CUSTOM"
             ( . "$CUSTOM" )
         else
-            vprintf 0 "Skipping %s" "$CUSTOM"
+            vprintf "Skipping %s" "$CUSTOM"
         fi
     fi
     [[ -e "$TMP_DIR" ]] && {
-        vprintf 0 "Debug results created in %s" "$TMP_DIR"
+        vprintf "Debug results created in %s" "$TMP_DIR"
     }
     return 0
 }
 
 while getopts "dhnsv?" optionName; do
     case "$optionName" in
-        (d) DEBUG=$((DEBUG+1)) ;;     # create copies/links in temporary directory, provide extra info
+        (d) DEBUG=$((DEBUG+1)) ;;     # copies/links in temporary directory, provide extra info
         (n) DRY_RUN=$((DRY_RUN+1)) ;; # report - don't do
         (s) SKIP_SENSITIVE=$((SKIP_SENSITIVE+1)) ;; # as it says
-        (v) VERBOSE=$((VERBOSE+1)) ;; # terse, chatty, report intent, expand commands as exceuted
+        (v) VERBOSE=$((VERBOSE+1)) ;; # terse, chatty, report intent, expand commands as executed
         (h|\?|*) usage;;
     esac
 done
+shift "$((OPTIND - 1))"
 install
