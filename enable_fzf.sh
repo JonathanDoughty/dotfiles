@@ -60,7 +60,7 @@ if [[ $_override_options -gt 0 ]]; then
         export FZF_ALT_C_COMMAND='fd --type d . --color=never'
     elif [[ $(type -f rg 2>/dev/null) ]]; then
         if false ; then
-            # This recommended setup causes me shell start issues
+            # This recommended setup causes shell start issues for me
             # See https://github.com/junegunn/fzf/issues/1750
             RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
             INITIAL_QUERY=""
@@ -73,5 +73,20 @@ if [[ $_override_options -gt 0 ]]; then
         fi
     fi
 fi
+
+# Handy functions from fzf ChangeLog https://github.com/junegunn/fzf/blob/master/CHANGELOG.md:
+
+# Display all bash/zsh functions, highlighted. Stop with ctrl-c, ctrl-g, ctrl-q, esc
+shell_functions () {
+    declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
+        bat --plain --language bash --color always |
+        fzf --read0 --ansi --reverse --multi --highlight-line --gap
+}
+
+# Page output, e.g., from long ripgrep results
+fpg () {
+    perl -0777 -pe 's/\n\n/\n\0/gm' |
+        fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
+}
 
 unset _override_completions _override_bindings _override_options

@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
-# Actions to set up standard macOS applications on login
+# Actions to set up conditions and start macOS applications on login
 
-# I create a 40GB, Case sensitive, APFS sparsebundle where most of git repos
-# and other work lives. Why? See https://stackoverflow.com/a/12085233/1124740
-sparsebundle="${HOME}/CM.sparsebundle"
+declare -i verbose=0            # 1 - info; 2 - chattier & logged; 3 - executaion trace
 
-if [[ -z "$CM_DIR" ]]; then
-    # Try to insure minimal environment, e.g., if running from Login item
-    . ~/.envrc                  # what direnv would normlly run
-fi
-sourcedir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives
+settings () {
+    [[ "$verbose" -gt 2 ]] && set -x
+    [[ "$verbose" -gt 1 ]] && log=~/login_actions.txt
 
-# This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
-# app which I run as a Login item.
-app_script="${HOME}/Applications/LogInScript.app/Contents/Resources/script"
+    # I create a 40GB, Case sensitive, APFS sparsebundle where most of git repos
+    # and other work lives. Why? See https://stackoverflow.com/a/12085233/1124740
+    sparsebundle="${HOME}/CM.sparsebundle"
 
-verbose=0
-log=
-[ $verbose -gt 1 ] && log=~/login_actions.txt
+    if [[ -z "$CM_DIR" ]]; then
+        # Try to insure minimal environment, e.g., if running from Login item
+        [[ -z "${DIRENV_FILE}" ]] && . ~/.envrc # what direnv would normlly run
+        # How/whether to source ~/.envrc under these conditions
+
+        # ToDo?
+        # Use `launchctl setenv` to export environmental changes to future processes
+        # Best done as a start/end diff to pick up other changes
+    fi
+    source_dir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives
+
+    # This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
+    # app which I run as a Login Item.
+    app_script="${HOME}/Applications/LogInScript.app/Contents/Resources/script"
+}
 
 adjust_path () {
     # Consider adding a file instead to /etc/paths.d/
@@ -28,9 +36,9 @@ mount_cm () {
     # Check that my case sensitive sparsebundle, generally a separate login item, is accessible
     declare -i times delay=2
 
-    if [[ ! -d "$sourcedir" ]]; then
+    if [[ ! -d "${source_dir}" ]]; then
         if [[ -d "$sparsebundle" ]]; then
-            [ $verbose -gt 0 ] && \
+            [ "$verbose" -gt 0 ] && \
                 printf "Opening %s\n" "$sparsebundle"
             open "$sparsebundle"    # Get macOS to mount the sparsebundle as a volume
             sleep $delay
@@ -39,23 +47,23 @@ mount_cm () {
             exit 1
         fi
     else
-        [[ $verbose -gt 0 ]] && \
-            printf "%s is accessible\n" "$sourcedir"
+        [[ "$verbose" -gt 0 ]] && \
+            printf "%s is accessible\n" "${source_dir}"
         return 0
     fi
 
     # Wait for sparsebundle contents to appear
     for times in 10 9 8 7 6 5 4 3 2 1 0; do
-        if [[ ! -d "$sourcedir" ]]; then
-            [[ $verbose -gt 1 ]] && \
-                printf "Waiting %s seconds for %s\n" $((times * delay)) "$sourcedir"
+        if [[ ! -d "${source_dir}" ]]; then
+            [[ "$verbose" -gt 1 ]] && \
+                printf "Waiting %s seconds for %s\n" $((times * delay)) "${source_dir}"
             sleep $delay
         else
             break
         fi
     done
-    if [[ ! -d "$sourcedir" ]]; then
-        printf "%s not accessible, exiting\n" "$sourcedir"
+    if [[ ! -d "${source_dir}" ]]; then
+        printf "%s not accessible, exiting\n" "${source_dir}"
         return 1
     fi
     return 0
@@ -72,15 +80,17 @@ check_scripts_sources () {
             cmp "$src" "$dest"
         fi
     }
-    #trap "set +x" RETURN && set -x
     if [[ -n "$TERM_PROGRAM" ]]; then
-        # We want this to run in the destination directory, not the source git repo
-        if [[ "$sourcedir" != "$(realpath "$(dirname "${BASH_SOURCE[0]}")")" ]] ; then
+        # I want this to run in the destination directory, not the source git repo
+        if [[ "${source_dir}" != "$(realpath "$(dirname "${BASH_SOURCE[0]}")")" ]] ; then
             # This script
-            _compare_if_present "$sourcedir/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
-            _compare_if_present "$sourcedir/Justfile" "Justfile"
-            _compare_if_present "$sourcedir/.envrc" ".envrc"
+            _compare_if_present "${source_dir}/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
+            # It's symlinked login item version
             _compare_if_present "$app_script" "${BASH_SOURCE[0]}"
+            # Common environment definitions
+            _compare_if_present "${source_dir}/.envrc" ".envrc"
+            # Actions
+            _compare_if_present "${source_dir}/HomeJustfile" "Justfile"
         else
             printf "%s expects to run from %s not %s\n" "${BASH_SOURCE[0]}" "$HOME" "$PWD"
         fi
@@ -96,7 +106,7 @@ ssh_identities () {
 }
 
 start_hammerspoon () {
-    # Make sure my primary Mac crutch is in place
+    # Make sure my primary macOS crutch is in place
     local crutch=Hammerspoon
     if ! pgrep -q "$crutch" ; then
         local id app
@@ -104,25 +114,25 @@ start_hammerspoon () {
         id=$(osascript -e "id of application \"$crutch\"" 2>/dev/null)
         app="$(osascript -e "tell application \"Finder\" to POSIX path of (get application file id \"$id\" as alias)" 2>/dev/null)"
         if [[ -n "$app" ]]; then
-            open -a "$app" && [ $verbose -gt 0 ] && \
+            open -a "$app" && [ "$verbose" -gt 0 ] && \
                 printf "Started %s\n" "$crutch"
         else
             printf "%s not found\n" "$crutch"
         fi
     else
-        [ $verbose -gt 0 ] && printf "%s already started\n" "$crutch"
+        [ "$verbose" -gt 0 ] && printf "%s already started\n" "$crutch"
     fi
 }
 
 start_notebooks () {
     (
         builtin cd ~/TW 2>/dev/null || exit
-        just open && [ $verbose -gt 0 ] && printf "Started Notes\n"
+        just open && [ "$verbose" -gt 0 ] && printf "Started Notes\n"
     )
 
     case "$(uname -n)" in
         (WorkLaptop*)
-            # Start my Project notebook on work laptop
+            # This used to start my Project notebook on work laptop
             pgrep -q -f 'tiddlywiki.*port=9994' || \
                 (~/CM/Base/bin/tw -s project &>/dev/null && printf "Started Project TW\n")
             open http://localhost:9994
@@ -137,7 +147,6 @@ init_log () {
         else
             printf "Unable to create %s\n" "$log"
         fi
-        # Adapted from: https://www.linuxjournal.com/content/bash-redirections-using-exec
         if test -t 1; then      # Stdout is a terminal.
             exec &> >(tee "$log")
         else                    # Stdout is not a terminal.
@@ -152,6 +161,7 @@ init_log () {
 }
 
 login_actions () {
+    settings
     init_log
 
     if [ "$#" -gt 0 ]; then
@@ -168,10 +178,10 @@ login_actions () {
             (*ssh*)
                 ssh_identities
                 ;;
-            (*hammer*)
+            (*hammer*|crutch)
                 start_hammerspoon
                 ;;
-            (*note*)
+            (*note*|tw)
                 start_notebooks
                 ;;
             (*)
@@ -188,10 +198,17 @@ login_actions () {
     fi
 }
 
+while getopts "hv?" flag; do
+    case "$flag" in
+        (v) verbose=$((verbose+1))
+            ;;
+        (h|\?|*)
+            printf "%s path|cm|check|ssh|hammerspoon|notes\n" "${BASH_SOURCE[0]}"
+            exit
+            ;;
+    esac
+done
+shift "$((OPTIND - 1))"
+
 # Allow for command line testing of individual functions
-[ $verbose -gt 1 ] && set -x
-case "$0" in
-    (*login*|*script*)
-        login_actions "$@"
-        ;;
-esac
+login_actions "$@"

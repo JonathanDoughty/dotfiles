@@ -3,12 +3,15 @@
 
 _debug=0
 
-if type is_defined &>/dev/null ; then
+if ! type is_defined &>/dev/null ; then
     # Source common functions
-    # shellcheck disable=SC1091
-    [[ -z ${ZSH_VERSION} ]] && . "$(dirname "${BASH_SOURCE[0]}")/shell-funcs.sh"
-    # shellcheck disable=SC1091,SC2296 # This is valid zsh sytax
-    [[ -n ${ZSH_VERSION} ]] && . "$(dirname "${(%):-%N}")/shell-funcs.sh"
+    if [[ -z ${ZSH_VERSION} ]]; then
+        # shellcheck disable=SC1091
+        . "$(dirname "${BASH_SOURCE[0]}")/shell-funcs.sh"
+    else
+        # shellcheck disable=SC1091,SC2296 # This is valid zsh sytax
+        . "$(dirname "${(%):-%N}")/shell-funcs.sh"
+    fi
 fi
 
 _is_type () {
@@ -84,11 +87,21 @@ elif [[ -n "$ZSH_VERSION" ]]; then
     compdef g=git
 fi
 gs () { git st; }                # see .gitconfig
+
 _is_type grep 'alias' && unalias grep       # replace Linux's system defined alias
 grep () { command grep --color=auto "$@"; } # ... with function equivalent I keep consistent
 hist () { history "$@"; }
 mv () { command mv -i "$@"; }
 whatsmyip () { dig +short myip.opendns.com @resolver1.opendns.com "$@"; }
+dnslookup () { # for when my DNS settings are not working
+    if [[ "$#" -lt 1 ]]; then
+        printf "usage: %s host\n" "${FUNCNAME[0]}"
+        return
+    else
+        curl https://api.hackertarget.com/dnslookup/?q="${1}";
+        printf "\n"
+    fi
+}
 
 # Replacements when available
 type duf  &>/dev/null && [[ -z "$INSIDE_EMACS" ]] && \
@@ -150,20 +163,17 @@ lr () {  # list recent files
 }
 
 if type rg &>/dev/null ; then
-    rgd () { rg -. "$@"; }       # ripgrep dot files too
-    rgi () { rg -. --no-ignore "$@"; }       # and ignore any .gitignore files
+    rgh () { rg --hidden "$@"; }             # ripgrep hidden, e.g., dot files too
+    rgi () { rg --hidden --no-ignore "$@"; } # and ignore any .gitignore files
+    rgt () { rg --hidden --no-ignore --glob='*test*' "$@"; } # skip test files too
 fi
 
-which () {  # tell how argument will be interpreted
+which () {  # normal `which` on steroids: tell how argument will be interpreted
     builtin alias "$@" 2>/dev/null \
         || type "$@" 2>/dev/null \
         || typeset -f "$@" 2>/dev/null \
         || command which "$@"
 }
-
-if [[ -n "$BASH_VERSION" && ${BASH_VERSINFO[0]} -gt 3 ]]; then
-    : # I used to include bash_completion here for some reason, now in .bashrc
-fi
 
 # OS specific
 
@@ -194,9 +204,9 @@ _macos_funcs () {
         local DEV v target OP
         OP="unmount"
         OPTERR=1; OPTIND=1  # reset getopts
-        while getopts "have" flag; do
+        while getopts "aehv" flag; do
             case "$flag" in
-                (h) cat <<EOF
+                (h|\?) cat <<EOF
 ${FUNCNAME[0]} [-a -e -h -v] volume - Unmount mounted volumes
 
 Options:
@@ -209,16 +219,16 @@ EOF
                     return
                     ;;
                 (a) # eject all filesystems on same disk
-                      DEV=1
-                      ;;
-                  (e) OP="eject"
-                  (v) # be verbose
-                      trap "set +x" RETURN && set -x
-                      ;;
-                  (\?)
-                      printf "Error parsing %s from %s\n" "$OPTARG" "$@"
-                      ;;
-                  (*) ;;        # satisfy shellcheck
+                    DEV=1
+                    ;;
+                (e) OP="eject"
+                    ;;
+                (v) # be verbose
+                    trap "set +x" RETURN && set -x
+                    ;;
+                (*)
+                    printf "Error parsing %s from %s\n" "$OPTARG" "$@"
+                    ;;
               esac
         done
         shift "$((OPTIND - 1))"

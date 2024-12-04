@@ -93,6 +93,7 @@ _integrations () {
                 # shellcheck disable=1090
                 [[ -r "${COMPLETION}" ]] && . "${COMPLETION}"
             done
+            # otherwise, at one time I was using git@github.com:scop/bash-completion.git
         fi
     else
         : # zsh MANPATH / completion TBD
