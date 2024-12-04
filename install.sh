@@ -242,7 +242,8 @@ app_rcfiles () {
     mkdir -p "${CONFIGS}/cheat"
     link_if_not_present "${DOT_PATH}/cheat.yml" "${CONFIGS}/cheat/conf.yml"
     mkdir -p "${CONFIGS}/direnv"
-    link_if_not_present "${DOT_PATH}/direnvrc" "${CONFIGS}/direnv/direnvrc"
+    # I no longer add my own extensions to direnv
+    #link_if_not_present "${DOT_PATH}/direnvrc" "${CONFIGS}/direnv/direnvrc"
     link_if_not_present "${DOT_PATH}/direnv.toml" "${CONFIGS}/direnv/direnv.toml"
     link_if_not_present "${DOT_PATH}/starship.toml" "${CONFIGS}/starship.toml"
     # wezterm's nice but Terminal is sufficient again

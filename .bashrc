@@ -264,6 +264,7 @@ _interactive_options() {
             #HISTIGNORE="ssh *:scp *:mta *:"
             shopt -s histappend histreedit histverify
             shopt -s checkwinsize
+            umask u=rwx,g=rx,o=
             # completion setup moved to brew, OS/system inits, or specific additions
             ;;
         (*)                     # non-interactive - be standard
