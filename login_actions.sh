@@ -91,38 +91,8 @@ check_scripts_sources () {
 # Initializations that depend on contents of the sparsebundle
 
 ssh_identities () {
-    # Add identities so that all clients of ssh-agent have access to those. Ventura added
-    # functionality to ssh-add such that if no agent exists but the socket does, then an
-    # ssh-agent process is spawned. For Linux see ssh_start_agent.sh.
-
-    # If you get "No identity found in the keychain." then you'll need to
-    # (cd ~/.ssh; ssh-add --apple-use-keychain [private key files])
-
-    local cmd
-    cmd=/usr/bin/ssh-add        # use native ssh, no e.g., brew alternatives
-    if [[ -S "$SSH_AUTH_SOCK" ]]; then
-        [ $verbose -gt 1 ] && \
-            printf "ssh-agent processes:\n%s\n" "$(pgrep -l ssh-agent)" && \
-            printf "SSH_AUTH_SOCK's owner: %s\n" "$(lsof -t "$SSH_AUTH_SOCK")"
-        if ! $cmd -l &>/dev/null ; then
-            # Sierra+ enabled adding identities with passphrases stored in Keychain via
-            # ssh-add --apple-use-keychain
-            # ssh-add --apple-load-keychaion will add all local keys with Keychain passwords
-            (                   # In a subshell
-                builtin cd ~/.ssh || exit
-                $cmd -q --apple-load-keychain --apple-use-keychain
-            )
-            [ $verbose -gt 0 ] && \
-                printf "The following identities are available to ssh via %s\n" "$SSH_AUTH_SOCK"
-        else
-            [ $verbose -gt 0 ] && \
-                printf "ssh identities already added\n"
-        fi
-        # shellcheck disable=SC2046 # word splitting desired listing keys
-        $cmd -l | basename $(cut -d ' ' -f 3)
-    else
-        printf "No ssh-agent socket present\n"
-    fi
+    # Add identities so that all clients of ssh-agent have access to those.
+    source "${source_dir}/ssh_start_agent.sh"
 }
 
 start_hammerspoon () {

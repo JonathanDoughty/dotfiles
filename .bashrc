@@ -227,6 +227,7 @@ _terminal_setup() {
         "cli_prompt.sh" # setup prompt based on user choice
         "enable_direnv.sh"
         "iterm_integration.sh"
+        "ssh_start_agent.sh"
     )
     for f in "${files[@]}"; do
         # source the ones that exist
@@ -242,11 +243,6 @@ _terminal_setup() {
     # Hack for direnv/iterm/.bashrc PROMPT_COMMAND ';;' still needed?
     # An issue seen in emacs shell and Terminal exec bash
     PROMPT_COMMAND=${PROMPT_COMMAND/;;/;}
-
-    if ! ssh-add -l &>/dev/null ; then # backstop login_actions
-        ssh_start_agent ""
-        [[ $_verbose -gt 0 ]] && echo "started ssh agent ${SSH_AGENT_PID}"
-    fi
 }
 
 _interactive_options() {
