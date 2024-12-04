@@ -1,12 +1,14 @@
 # .gitignore for dotfiles
-*.pyc
+# auto downloaded files
+git-completion-v*.*
+# Ancient stuff
 XResources/*[^\.]
 # Maven
 settings.xml
 archetype-catalog.xml
 .m2/repository
 .m2/wrapper
-# Zsh
+# Zsh updated
 .zsh_history
 zsh/examples/
 zsh/.zcompdump

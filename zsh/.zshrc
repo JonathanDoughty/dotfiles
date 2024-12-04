@@ -86,6 +86,7 @@ if [[ "$ZSH_EVAL_CONTEXT" == "file" ]]; then
         "cli_prompt.sh"         # prompt glitz
         "brew-integration.sh"
         "emacsclient.sh"
+        "git-integration.sh"
         "bash-tmux.sh"
         "enable_fzf.sh"
         "misc-functions.sh"     # includes lazy load definitions from other sources

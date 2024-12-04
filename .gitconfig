@@ -17,7 +17,7 @@
     defaultBranch = main
 
 [branch]
-	autoSetupRebase = always
+    autoSetupRebase = always
 
 [commit]
     verbose = true              # whole commit diff in message
@@ -42,7 +42,7 @@
 [merge]
     verbosity = 0
     stat = true # always show diffstat at end of merge
-	ff = only # no extra commit when merging
+    ff = only # no extra commit when merging
     conflictstyle = zdiff3  # provide extra context info
 [mergetool]
     # Clean up backup files created by merge tools on tool exit
@@ -110,7 +110,7 @@
     # Similar with wrapping, standard color names, subject and non-empty body, short author email
     ld = !git --no-pager log --graph --branches --abbrev-commit --date=relative \
     --pretty=tformat:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' -n 25
-    # My old preferred, with ansi color codes and lacking author info
+    # My old preferred, via pager with ansi color codes and lacking author info
     ldo = log --graph --abbrev-commit --date=relative \
     --pretty=format:'%C(204)%h%Creset -%C(214)%d%Creset %s %C(48)(%cr)%Creset'
     lpd = log -p # show patches diff style
@@ -124,7 +124,16 @@
     pushfwl = push --force-with-lease  # update remote branch that has been locally rebased
     rv = remote -v # list remotes
     slog = log --pretty=format:'%w(132,0,8)%Cred%h%Creset %C(magenta)%as%Creset%n%Cblue%s%Creset' --name-status -S # search commits changing the occurance of <string>
+    sh = ! git switch $(hostname -s)
+    sm = ! git switch main && git fetch --prune -v
     sw = switch
     # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
     wip = !git add -u && git commit -m "WIP"  # save all changes as work-in-progress
     wipe = !git add -A && git commit -qm 'WIPE SAVEPOINT' && git reset HEAD~1 --hard # undo saved work-in-progress
+    # Difftastic
+    dlog = -c diff.external=difft log --ext-diff
+    ddiff = -c diff.external=difft diff
+    dshow = -c diff.external=difft show --ext-diff
+    dlp = -c diff.external=difft log -p --ext-diff # `git log` with patches shown with difftastic.
+    dc = -c diff.external=difft show --ext-diff # Show the most recent commit with difftastic.
+    dft = -c diff.external=difft diff           # `git diff` with difftastic.

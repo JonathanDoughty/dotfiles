@@ -160,10 +160,6 @@ _environment_setup() {
 
             export EDITOR=vi    # sadly emacs isn't everywhere by default
             export VISUAL=${EDITOR}
-            local CM
-            CM=$(realpath "${HOME}/CM" 2>/dev/null)
-            # Don't let git look above home or my CM area
-            export GIT_CEILING_DIRECTORIES="${HOME}${CM:+:}${CM}"
             export RIPGREP_CONFIG_PATH=${HOME}/.ripgreprc # rc file not automatic considered silly
             export SUDO_PS1='# '
             export TIMEFORMAT=$'\nreal:\t%R\nuser:\t%U\nsystem:\t%S\ncpu:\t%P%%'
@@ -197,6 +193,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
         "docker-funcs.sh"
         "emacsclient.sh"         # shell emacs access
         "enable_fzf.sh"          # fuzzy finder
+        "git-integration.sh"
         "bash-go.sh"             # golang dev
         "disable-bash-office.sh"
         "bash-tmux.sh"
