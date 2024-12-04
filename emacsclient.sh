@@ -34,7 +34,7 @@ function emc {
                 ;;
             (linux*)
                 # Linux includes socket info following path
-                SOC=$(lsof -c '/emacs/i' | awk '/server / {print $(NF-2) }')
+                SOC=$(lsof -w -c '/emacs/i' | awk '/server / {print $(NF-2) }')
                 ;;
         esac
         printf "%s" "$SOC"
@@ -57,7 +57,7 @@ function emc {
         # Insure client gets response from server
         TIMER=1
         while ! "$CLIENT" -q -s "$SOC" -e t &>/dev/null ; do
-            printf "Waiting %d seconds for server response\n" "$TIMER"
+            printf "Waiting %d seconds for server response to %s\n" "$TIMER" "$CLIENT"
             sleep $TIMER
             (( TIMER+=1 ))
         done
@@ -77,6 +77,7 @@ function emc {
         # Possibly the bug described https://unix.stackexchange.com/a/100759/13887
         # Use lsof instead.
         pid="$(lsof -w -c "/$process_name/i" -t)"
+        #printf "emacs pid %s\n" "$pid" >&2
         echo "$pid"
     }
 
@@ -84,11 +85,19 @@ function emc {
         # Find the emacsclient associated with the running Emacs
         local emacs_path="" pid client=""
         pid="$1"
-        emacs_path="$(ps -fp "$pid" | awk 'NR>1 {printf "%s", $NF}')"
+        case ${OSTYPE} in
+            (darwin*)
+                emacs_path="$(ps -fp "$pid" | awk 'NR>1 {printf "%s", $NF}')"
+                ;;
+            (linux*)
+                emacs_path="$(readlink /proc/${pid}/exe)"
+                ;;
+        esac
         # Find the companion emacsclient in the filesystem hierarchy
         while [[ "${emacs_path%/*}" != "" && "$client" == "" ]]; do
             # EmacsForMac RC includes multiple bin-* directories for separate $(uname -m)s
             # Use the universal binary from bin/ (first we hope.)
+            #printf "find %s -name emacsclient | head -1)" "${emacs_path%/*}" >&2
             client="$(find "${emacs_path%/*}" -name emacsclient | head -1)"
             emacs_path="${emacs_path%/*}"
         done
@@ -105,7 +114,7 @@ function emc {
     shift "$((OPTIND - 1))"
 
     if [[ "${VERBOSE}" -gt 0 && -z "$ZSH_VERSION" ]]; then
-        set -x && trap "set +x" RETURN EXIT
+        set -x && trap "set +x" RETURN INT EXIT
     fi
 
     _emc_start_emacs
