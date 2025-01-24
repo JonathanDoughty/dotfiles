@@ -74,13 +74,21 @@ ssh_start_agent () {
     fi
 }
 
-# standard command options and shortcuts
-# I've wasted too much time when aliases fail under odd conditions. I now just use functions.
+# Standard command default options and shortcuts for frequent combinations. I wasted too much
+# time when using aliases failed under conditions I'd forgotten about; now I just use
+# functions.
 
 cp () { command cp -i "$@"; }
 cs () { printf '\033c'; }       # clear screen
+eg () {
+    if [[ "$#" -gt 0 ]]; then
+        env | grep  "$@"
+    else
+        printf "eg [pattern to search for in environment]\n"
+    fi
+}
 g () { git "$@"; }
- # enable completion for that:
+ # enable completion for that shortcut:
 if [[ -n "$BASH_VERSION" ]]; then
     _is_type __git_complete 'function' && __git_complete g __git_main
 elif [[ -n "$ZSH_VERSION" ]]; then
@@ -88,13 +96,13 @@ elif [[ -n "$ZSH_VERSION" ]]; then
 fi
 gs () { git st; }                # see .gitconfig
 
-_is_type grep 'alias' && unalias grep       # replace Linux's system defined alias
+_is_type grep 'alias' && unalias grep       # replace Linux's system defined alias...
 grep () { command grep --color=auto "$@"; } # ... with function equivalent I keep consistent
 mv () { command mv -i "$@"; }
 whatsmyip () { dig +short myip.opendns.com @resolver1.opendns.com "$@"; }
 dnslookup () { # for when my DNS settings are not working
     if [[ "$#" -lt 1 ]]; then
-        printf "usage: %s host\n" "${FUNCNAME[0]}"
+        printf "usage: dnslookup host\n"
         return
     else
         curl https://api.hackertarget.com/dnslookup/?q="${1}";
@@ -102,7 +110,7 @@ dnslookup () { # for when my DNS settings are not working
     fi
 }
 
-# Replacements when available
+# Command replacements when available
 type duf  &>/dev/null && [[ -z "$INSIDE_EMACS" ]] && \
     df () {
         # duf requires line drawing characters
@@ -118,34 +126,37 @@ type btm  &>/dev/null && \
 
 # More colorful ls
 _is_type ls 'alias' && unalias ls # replace Linux's system alias
-if [[ -e "${HOMEBREW_PREFIX}"/bin/lsd || -e /usr/local/bin/lsd ]]; then
+if [[ -e "${HOMEBREW_PREFIX:-/no_prefix}"/bin/lsd || -e /usr/local/bin/lsd ]]; then # brew or DSM 
     ls () {
         local _defaults=""
          # emacs' shell-mode is not a true terminal emulator
         [[ "$INSIDE_EMACS" =~ 'comint' ]] && _defaults="--classic"
-        # I find lsd (lsdeluxe) more consistent with ls flags than the alternative e{x,z}a.
-        command lsd $_defaults "$@"
+        # I find lsd (LSDeluxe) more consistent with ls flags than the alternative e{x,z}a.
+        command lsd --classify $_defaults "$@"
     }
 elif type eza &>/dev/null ; then
     ls () {
         local _sort=""
         # SynoCLI package adds eza as an alternative to exa
         if [[ "$1" =~ -.* && "$1" != x"${1/t/}" ]]; then
-            # Handle non-traditional -t).
+            # Handle non-traditional -t, which muscle memory invokes.
             local _args="${1/t/}"
             shift
             _sort="$_args --sort=modified"
         fi
         eza --classify --color=auto --color-scale --icons "$_sort" "$@"
     }
-elif ls --classify &>/dev/null ; then # classify <- GNU ls via brew coreutils / Linux
+elif ls --classify -d . &>/dev/null ; then # --classify <- GNU ls via brew coreutils / Linux
     ls () {
         command ls --classify --color=auto "$@"
     }
-else
+elif ls -% -d . &>/dev/null ; then # macOS /bin/ls
     ls () {
-        # native, e.g. macOS /bin/ls
         command ls -FG --color=auto "$@"
+    }
+else                            # some kind of POSIX ls?
+    ls () {
+        command ls -F "$@"
     }
 fi
 
@@ -157,17 +168,29 @@ lr () {  # list recent files
     else                        # standard ls and eza:
         _color_args=( --color=always )
     fi
-    # shellcheck disable=SC2012,SC2068  # using ls function is the point, ignore glob complaint
-    ls -lrt ${_color_args[@]} "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
+    local _type
+    if [[ -n "$BASH_VERSION" ]]; then
+        _type="$(type -t "ls" 2>&1)"
+    elif [[ -n "$ZSH_VERSION" ]]; then
+        _type="$(whence -w "ls" 2>&1)"
+    fi
+    # shellcheck disable=SC2012  # using ls function is the point
+    [[ "$_type" =~ function ]] && \
+        ls -lrt "${_color_args[@]}" "${@}" | tail -$(( LINES * 3 / 4 )) # 3/4 of screen worth
 }
 
 if type rg &>/dev/null ; then
-    rgh () { rg --hidden "$@"; }             # ripgrep hidden, e.g., dot files too
-    rgi () { rg --hidden --no-ignore "$@"; } # and ignore any .gitignore files
-    rgt () { rg --hidden --no-ignore --glob='*test*' "$@"; } # skip test files too
+    rgh () {                  # ripgrep hidden, e.g., dot files too, with extras from RG_LOCAL 
+        local cmd
+        printf -v cmd "rg --hidden %s %s" "${RG_LOCAL:+$RG_LOCAL}" "$*"
+        [[ "${_verbose:=0}" != "0" ]] &&
+            echo "$cmd"
+        eval "$cmd"
+    }
+    rgi () { rgh --no-ignore "$@"; }                # and ignore any .gitignore files
 fi
 
-which () {  # normal `which` on steroids: tell how argument will be interpreted
+which () {  # `which` on steroids: how $@ will be interpreted by first one to succeed
     builtin alias "$@" 2>/dev/null \
         || type "$@" 2>/dev/null \
         || typeset -f "$@" 2>/dev/null \
@@ -195,7 +218,7 @@ _macos_funcs () {
 
     # possibly stale stats, human readable base 10, skip /dev, autofs mounts;
     # fallback df replaced by duf based version above if that's installed
-    _is_type df function || \
+    _is_type df 'function' || \
         df () { /bin/df -n -H -T nodevfs,autofs,osxfuse "$@"; }
 
     # provide a function to eject mounted volumes like linux has
@@ -284,7 +307,7 @@ EOF
         killall -STOP Hammerspoon
     }
 
-    _is_type "qlmanage" "file" &&  \
+    _is_type qlmanage "file" &&  \
         ql () { # command line quicklook
             qlmanage -p "$@" &>/dev/null &
         }
@@ -297,7 +320,7 @@ EOF
         )
     }
 
-    _is_type "time_machine_local" "file" && \
+    _is_type time_machine_local "file" && \
         tml () {                    # for the lazy typer, assuming the script is in PATH by now
             time_machine_local "$@" # start local time machine update script
         }
@@ -317,7 +340,7 @@ EOF
             command rm "$@"
         fi
     }
-    _is_type "trash" "function" "file" && \
+    _is_type trash "function" "file" && \
         rm () { trash "$@"; }
 }
 
@@ -326,7 +349,7 @@ _linux_funcs () {
         df () { command df -h -x tmpfs -x squashfs -x devtmpfs "$@"; }
     pstree () { /usr/bin/pstree -Gpu "$@"; }
     rm () { command rm -i "$@"; }
-    if [ -n "${DESKTOP_SESSION}" ]; then  # When in GUI; Debian specific?
+    if [ -n "${DESKTOP_SESSION}" ]; then  # When in desktop session, per freedesktop.org
         type xdg-open &>/dev/null && \
             open () { xdg-open "$@"; }
     fi
