@@ -301,7 +301,7 @@ _command_history_setup() {
 
     # Adapted from https://www.jefftk.com/p/logging-shell-history-in-zsh
     _full_history() {
-        local _entry _pwd
+        local _entry _pwd _host
         # declare -a _prefixes # ToDo replacements in addition to $HOME -> ~
         local HISTTIMEFORMAT="%Y-%m-%dT%H:%M:%S "
         if [[ -z "$ZSH_VERSION" ]]; then
@@ -312,7 +312,8 @@ _command_history_setup() {
             _pwd="${PWD/#${HOME}/~}"
         fi
         _entry="${_entry/# *([0-9])  /}"  # remove history number and surrounding spaces
-        printf "%s %s %s %s\n" "${HOSTNAME}" "${_pwd}" "$$" "${_entry}" \
+        _host="${HOSTNAME%%[-.]*}"        # if HOSTNAME was already set but not short make it so
+        printf "%s %s %s %s\n" "${_host}" "${_pwd}" "$$" "${_entry}" \
                >> "${_CLI_HISTORY}"
     }
 
@@ -327,6 +328,7 @@ _command_history_setup() {
             precmd_functions+=(_full_history)
     fi
 
+    hist () { history "$@"; }
     histgrep() {                # look for pattern in full history
         local matches=10
         if [[ "$#" == 0 ]]; then

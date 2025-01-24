@@ -90,7 +90,6 @@ gs () { git st; }                # see .gitconfig
 
 _is_type grep 'alias' && unalias grep       # replace Linux's system defined alias
 grep () { command grep --color=auto "$@"; } # ... with function equivalent I keep consistent
-hist () { history "$@"; }
 mv () { command mv -i "$@"; }
 whatsmyip () { dig +short myip.opendns.com @resolver1.opendns.com "$@"; }
 dnslookup () { # for when my DNS settings are not working
