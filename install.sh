@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash   # use native bash even if it is ancient (macOS)
 
 # YakShave: replace with https://github.com/andsens/homeshick
 # YakShave: replace the installation functions with a table driven array
@@ -10,15 +10,15 @@ ${0##*/} - create symbolic links to/copy configuration managed dot files
 
 -d      - Debug creating links and copies in default /tmp/$PPID, not $HOME
 -n      - Dry run: print what would be linked or copied
--s      - Skip sourcing ${CUSTOM}
+-s      - Skip sourcing ${PERSONAL_INSTALL}
 -v      - Be verbose, repeated -v arguments add verbosity:
           1: terse 2: chatty 3: report intent 4: expand commands on execution
 -? -h   - This help
 
-If ${CUSTOM} exists it is sourced after the
-remaining set up has completed.
+If ${PERSONAL_INSTALL} exists it is sourced after the
+remaining set up has completed (unless the -s flag is used).
 
-The custom script can, e.g., create symbolic links to controlled access files
+The personal script can, e.g., create symbolic links to controlled access files
 having sensitive contents not to be included here using any of the functions
 defined here. As an example I use that to set up my ~/.ssh contents.
 
@@ -33,27 +33,28 @@ EOF
 
 # Configuration
 
-OS=$(uname -s)
-HOSTNAME=$(hostname -s)
-HOSTNAME=${HOSTNAME%%[-]*}      # strip off any multi-interface name components
-
 DOT_PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"  # This directory
+# shellcheck disable=SC1091
+source "$DOT_PATH"/shell-funcs.sh # eat some of our own dog food
+
+OS=$(uname -s)
+HOSTNAME=$(hostname -s)         # short can still have identifiers like name-wifi
+HOSTNAME=${HOSTNAME%%[-]*}      # strip off any of those multi-interface components
+
 CONFIGS="${HOME}/.config"
 CACHE_PATH="${HOME}/Downloads"
-CM_DIR=${CM_DIR:-${DOT_PATH}}   # from environment or this directory
+CM_DIR=${CM_DIR:-${DOT_PATH}}   # Managed sources, from environment, or this directory
 CM_ROOT=$(dirname "${CM_DIR}")
-EMACS_PATH="${HOME}/CM/emacs"
+EMACS_PATH="${HOME}/CM/emacs"   # Where Emacs sources are managed
 MAVEN_PATH="${CACHE_PATH}/MavenRepository"
 GRADLE_PATH="${CACHE_PATH}/Gradle"
 EMACS_BACKUP="${CACHE_PATH}/EmacsBackups"
-CUSTOM="${CUSTOM:-/path/to/custom_installation_script}"
+PERSONAL_INSTALL="${PERSONAL_INSTALL:-/path/to/custom_installation_script}"
 INIT_DB=0                       # Skip database related unless > 0
 INIT_JAVA=0                     # Skip Java related unless > 0
 INIT_PYTHON=1                   # Skip python related unless > 0
 
-declare -i VERBOSE=0 DRY_RUN=0 DEBUG=0 SKIP_SENSITIVE=0
-
-source "$DOT_PATH"/shell-funcs.sh # eat some of our own dog food
+declare -i VERBOSE=0 DRY_RUN=0 DEBUG=0 SKIP_PERSONAL=0
 
 trace() {
     # Help me debug some issues
@@ -282,12 +283,12 @@ install () {
     app_rcfiles                 # Followed by other rc files
     developer_apps              # Developer set up
     os_specific                 # Those that vary slightly by OS
-    if [[ -e "$CUSTOM" ]]; then
-        if [[ "$SKIP_SENSITIVE" -eq 0 ]]; then
-            vprintf 1 "Sourcing %s" "$CUSTOM"
-            ( . "$CUSTOM" )
+    if [[ -e "$PERSONAL_INSTALL" ]]; then
+        if [[ "$SKIP_PERSONAL" -eq 0 ]]; then
+            vprintf 1 "Sourcing %s" "$PERSONAL_INSTALL"
+            ( . "$PERSONAL_INSTALL" )
         else
-            vprintf "Skipping %s" "$CUSTOM"
+            vprintf "Skipping %s" "$PERSONAL_INSTALL"
         fi
     fi
     [[ -e "$TMP_DIR" ]] && {
@@ -300,7 +301,7 @@ while getopts "dhnsv?" optionName; do
     case "$optionName" in
         (d) DEBUG=$((DEBUG+1)) ;;     # copies/links in temporary directory, provide extra info
         (n) DRY_RUN=$((DRY_RUN+1)) ;; # report - don't do
-        (s) SKIP_SENSITIVE=$((SKIP_SENSITIVE+1)) ;; # as it says
+        (s) SKIP_PERSONAL=$((SKIP_PERSONAL+1)) ;; # as it says
         (v) VERBOSE=$((VERBOSE+1)) ;; # terse, chatty, report intent, expand commands as executed
         (h|\?|*) usage;;
     esac
