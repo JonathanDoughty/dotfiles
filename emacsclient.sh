@@ -90,7 +90,7 @@ function emc {
                 emacs_path="$(ps -fp "$pid" | awk 'NR>1 {printf "%s", $NF}')"
                 ;;
             (linux*)
-                emacs_path="$(readlink /proc/${pid}/exe)"
+                emacs_path="$(readlink /proc/"${pid}"/exe)"
                 ;;
         esac
         # Find the companion emacsclient in the filesystem hierarchy
@@ -149,9 +149,26 @@ function emr {
     emc -e "(view-file \"$*\")"
 }
 
-# shellcheck disable=SC1091 # eat - Emulate a Terminal
-[[ -n "$EAT_SHELL_INTEGRATION_DIR" ]] && \
+# Tell applications (Emacs is the only one I use so far) where LibreOffice dictionaries are
+# located Better here than buried in .emacs.d/' twisty path although this is only useful if the
+# above ends up starting Emacs.
+if type hunspell &>/dev/null ; then
+    case ${OSTYPE} in
+        (darwin*)
+            dict_path="/Applications/LibreOffice.app/Contents/Resources/extensions/dict-en"
+            ;;
+        (linux*)
+            ;;
+    esac
+    if [[ -n "$dict_path" ]]; then
+        export DICPATH="$dict_path"
+    fi
+fi
+
+# eat terminal emulation
+if [[ -n "$EAT_SHELL_INTEGRATION_DIR" ]]; then
     source "$EAT_SHELL_INTEGRATION_DIR/${SHELL##*/}"
+fi
 
 # Any arguments? Then invoke emacsclient with them
 if [[ ${#@} -gt 1 ]]; then
