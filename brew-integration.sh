@@ -68,7 +68,7 @@ _homebrew_setup () {
     done
 }
 
-_integrations () {
+_homebrew_integrations () {
     # Integrate brew provided shell completions if installed
     local COMPLETION
     if [[ -n "$BASH_VERSION" ]]; then
@@ -77,9 +77,6 @@ _integrations () {
         extglob=$(shopt -p extglob)
         MANPATH="${MANPATH%%+(:)}"; export MANPATH # brew's shellenv appends extra :
         eval "$extglob"
-
-        [[ "${_verbose:-0}" -gt 1 ]] && \
-            printf "[%s]: PATH:%s\nMANPATH: %s\n" "${FUNCNAME[0]}" "$PATH" "$MANPATH"
 
         # If bash_completions is installed...
         if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]
@@ -105,7 +102,7 @@ _homebrew_setup
 
 if [[ -n "${HOMEBREW_PREFIX}" ]]; then
 
-    _integrations
+    _homebrew_integrations
 
     # Define wrapper function around normal brew shell
     brew() {
@@ -239,7 +236,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
     }
 fi
 
-unset -f _bash_brew_usage _homebrew_setup _integrations
+unset -f _bash_brew_usage _homebrew_setup _homebrew_integrations
 
 ( # Being sourced?
     [[ -n $ZSH_VERSION && $ZSH_EVAL_CONTEXT =~ :file$ ]] ||

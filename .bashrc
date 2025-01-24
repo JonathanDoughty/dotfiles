@@ -11,13 +11,13 @@ fi
 
 [[ "$EUID" -eq 0 ]] && return   # avoid all this if root
 
-declare -i _verbose=0           # 1 - report externals; 2 - more details
+declare -i _verbose=0           # 1 - report externals; 2 - more; 3 - detailed
 declare -i _debug=0             # 1 - currently unused; 2 - some execution traces
 # Minor optimization frequently used in other scripts
 : export "${HOSTNAME:=$(hostname -s)}"
 
 # Functions used herein and in some other scripts in same repo
-_functions() {
+_helper_functions() {
 
     # Find and output the full path to the argument (or a blank line)
     script_source() {
@@ -75,10 +75,10 @@ _functions() {
         EXT_CMDS="$(script_source "$@" )"
         if [[ -e "$EXT_CMDS" ]]; then
             source "$EXT_CMDS"
-            [[ "$_verbose" -gt 0 ]] && printf "sourced definition from %s\n" "$1" 1>&2
+            [[ "$_verbose" -gt 0 ]] && printf "Sourced definitions from %s\n" "$1" 1>&2
             return 0
         else
-            [[ "$_verbose" -gt 1 ]] && printf "skipped sourcing from non-existent %s\n" "$1" 1>&2
+            [[ "$_verbose" -gt 1 ]] && printf "Skipped sourcing from non-existent %s\n" "$1" 1>&2
             return 1
         fi
     }
@@ -215,8 +215,6 @@ _external_defs() { # functions, etc. related to local installs, external set up
     for f in "${files[@]}"; do
         # source the ones that exist
         _define_from "$f"
-        [[ "$_verbose" -gt 0 ]] &&
-            printf "\nDefined external defs from %s\n\n" "$f"
     done
 }
 
@@ -276,9 +274,9 @@ _interactive_options() {
 
 _main() {
     # ... A Maze Of Twisty Little Passages All Alike...
-    _functions
+    _helper_functions
 
-    if [ -z "$ENV_SET" ]; then  # Avoid duplicate invocation, e.g., for exec bash
+    if [ -z "$ENV_SET" ]; then  # avoid duplicate invocation, e.g., for exec bash
         _environment_setup
         _path_additions         # standard paths including ~/.local/bin for external_defs
     fi
@@ -288,14 +286,14 @@ _main() {
     _terminal_setup                  # some rely on external_defs, e.g., ssh agent check
     _path_additions "post externals" # final path revisions
 
-    cd . || return              # NB: not builtin cd
+    cd . || return              # NB: NOT builtin cd
     # Side-effect: lazy load function definitions for overrides and initialize tab title & prompt;
     # this is way too obscure.
 
     # Clear variables/functions not intended for further use
     unset -v _verbose _debug
     unset -f _environment_setup _interactive_setup _terminal_setup \
-          _define_from _functions _external_defs _aliases _path_additions \
+          _define_from _helper_functions _external_defs _aliases _path_additions \
           "${FUNCNAME[0]}"
 }
 
