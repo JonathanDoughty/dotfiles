@@ -1,10 +1,16 @@
-# Don't let ripgrep vomit really long lines to my terminal, and show a preview.
+# Don't let ripgrep spew really long lines to my terminal, and show a preview.
 --max-columns=150
 --max-columns-preview
 
-# Ignore contents of git repos
+# Don't search in git blobs, etc.
 --glob=!.git
 
-# Add my 'tw' type.
+# I generally don't care about matches in node library contents
+--glob=!node_modules
+
+# Nor do I typically want to search in Emacs' packages
+--glob=!elpa
+
+# Add my 'tw' / tiddlywiki file type.
 --type-add
 tw:*.{tid}
