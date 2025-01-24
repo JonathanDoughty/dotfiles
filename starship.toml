@@ -10,6 +10,9 @@
 add_newline = false             # I like minimal
 continuation_prompt = '▶▶ '
 
+# I use the default $all format and then disable the ones I don't need so that I see
+# additions that apply in new versions.
+
 [character]
 error_symbol = '[✗](bold fg:red)'
 success_symbol = '[▶](bold fg:green)'
@@ -27,6 +30,7 @@ disabled = true
 [directory]
 truncation_symbol = ''
 use_logical_path = false
+disabled = false
 
 [directory.substitutions]
 '/Volumes/CM' = 'CM'
@@ -57,8 +61,17 @@ style = 'bold purple'
 disabled = false
 style = 'bold purple'
 
+[hostname]
+ssh_only = true
+ssh_symbol = ''
+detect_env_vars = [ '!TMUX', 'SSH_CONNECTION' ]
+format = '[$hostname ]'
+disabled = false
+
 [java]
 format = '[$symbol]($style) '
+disabled = false
+
 [localip]
 disabled = true
 ssh_only = false
@@ -76,7 +89,7 @@ format = '[$symbol]($style)'
 disabled = false
 
 [os.symbols]
-Macos = ' ' # plainer '' - broken in some nerdfonts; alternative: '⌘'
+Macos = ' ' # plainer than default red apple; '' is broken in some nerdfonts; alternative: '⌘'
 
 [package]
 format = '[$symbol]($style) '
@@ -88,29 +101,50 @@ disabled = true
 [python]
 format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
 disabled = false
-detect_extensions = []
-# prevent random .py files, eg., in ~/Documents, from triggering
+detect_extensions = [] # prevent random .py files, eg., in ~/Documents, from triggering
 
 [shell]
-bash_indicator = 'b'
+bash_indicator = '' # bash is normal for me; make alternatives subtly apparent
 zsh_indicator = 'z'
-disabled = true
-# helpful when debbuging bash vs. zsh compatibility
+fish_indicator = '󰈺'
+unknown_indicator = '?'
+disabled = false
 
 [sudo]
-disabled = false
 format = '[$symbol]($style) '
 style = 'bold red'
 symbol = "#"
+disabled = false
 
 [username]
-disabled = false
 show_always = true
 format = '[$user]($style) '
 aliases = { "jwd" = "" }
+disabled = false
 
 [custom.foo]                    # example as a reminder
 command = 'echo foo' # shows output of command
 detect_files = ['foo'] # can specify filters but wildcards are not supported
 #when = ''' test "$HOME" = "$PWD" '''
 format = '[$output ]($style)'
+disabled = true
+
+# Via https://github.com/starship/starship/discussions/1252
+[custom.ssh_no_keys]
+description = "custom.ssh_no_keys"
+when = "ssh-add -l | grep -q 'no identities'"
+command = "echo 🚫"
+format = "$symbol[$output]($style) "
+shell = ["bash", "--noprofile", "--norc"]
+symbol = "🔑"
+style = "bold fg:red"
+
+[custom.ssh_keys]
+description = "custom.ssh_keys"
+when = "ssh-add -l | grep -v -q 'no identities'"
+command = "ssh-add -l | grep -v 'no identities' | wc -l"
+format = "$symbol[$output]($style) "
+shell = ["bash", "--noprofile", "--norc"]
+symbol = "🔑"
+style = "bold fg:green"
+disabled = true
