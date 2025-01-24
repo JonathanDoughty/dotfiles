@@ -13,8 +13,12 @@ settings () {
 
     if [[ -z "$CM_DIR" ]]; then
         # Try to insure minimal environment, e.g., if running from Login item
-        [[ -z "${DIRENV_FILE}" ]] && . ~/.envrc # what direnv would normlly run
-        # How/whether to source ~/.envrc under these conditions
+        if type direnv &>/dev/null; then
+            direnv allow; eval "$(direnv export bash)"
+        else
+            [[ -z "${DIRENV_FILE}" ]] && . ~/.envrc # what direnv would normlly run
+            # NB this won't handle otherdirectories though, as in start_notebooks
+        fi
 
         # ToDo?
         # Use `launchctl setenv` to export environmental changes to future processes
@@ -125,18 +129,23 @@ start_hammerspoon () {
 }
 
 start_notebooks () {
-    (
-        builtin cd ~/TW 2>/dev/null || exit
-        just open && [ "$verbose" -gt 0 ] && printf "Started Notes\n"
-    )
+    if [[ -e ~/TW ]]; then
+        (
+            # My setup assumes direnv will init the environment
+            builtin cd ~/TW 2>/dev/null || exit
+            just open && [ "$verbose" -gt 0 ] && printf "Started Notes\n"
+        )
+    fi
 
     case "$(uname -n)" in
         (WorkLaptop*)
             # This used to start my Project notebook on work laptop
-            pgrep -q -f 'tiddlywiki.*port=9994' || \
-                (~/CM/Base/bin/tw -s project &>/dev/null && printf "Started Project TW\n")
+        pgrep -q -f 'tiddlywiki.*port=9994' || \
+        (
+            ~/CM/Base/bin/tw -s project &>/dev/null && printf "Started Project TW\n"
             open http://localhost:9994
-            ;;
+        )
+        ;;
     esac
 }
 
