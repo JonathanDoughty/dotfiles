@@ -43,29 +43,34 @@ These began as [csh](https://en.wikipedia.org/wiki/C_shell) (believe it or
 not) initialization files and have evolved through
 [ksh](https://en.wikipedia.org/wiki/KornShell), `bash` and now `zsh`.
 
-They originated decades ago when disks were slow and it made sense to
-optimize shell initialization performance. I still try to keep them somewhat
-operating system agnostic, although lately they emphasize **macOS** and
-**Linux** derivatives; testing on the latter is becoming rarer. The only **Windows**
-left here is only a reminder that at one time these helped me survive on that
-platform too.
+They originated decades ago when disks were slow and it made sense to optimize
+shell initialization performance. I still try to keep these somewhat operating
+system agnostic, although lately they emphasize **macOS** and **Linux**
+derivatives. The only **Windows** remnants left here are as a reminder that at
+one time these helped me survive on that platform too.
 
-Aspects that might be of interest:
+Facets that might be of interest:
 
-* Over time, as CPUs and disks got faster, various aspects have migrated into
-  separate shell scripts that are sourced.
-* The use of 'Just In Time', lazy loading of some related bash
-  functions, some of which are rarely used any longer so that only stubs
-  remain in my shell environments.
+* Over time, as CPUs and disks got faster, many aspects have migrated into
+  separate shell scripts that are sourced as appropriate. Not all of these are
+  used anymore but those referenced in `.bashrc` and `zsh/.zshrc` are
+  exercised frequently.
+* The use of 'Just In Time', lazy loading of some function definitions, some
+  of which are rarely used any longer so that only stubs remain in my shell
+  environments.
 * I've adapted most of my crutches to be both `bash` and `zsh` compatible;
   however the latter tend to be less well tested - `bash` is still my default
-  shell. I avoid the various `zsh` frameworks in favor of knowing where and
-  what my customizations are doing. I'm certain there are better `zsh` ways to
-  do many things.
+  shell. I avoid `zsh` frameworks in favor of knowing what my shell
+  initialization is doing and where I might deviate from out of the box
+  behavior. However I am certain there are better `zsh` ways to accomplish
+  many things.
 * While I think this is all still compatible with macOS's native bash I put
-  effort into that only when absolutely necessary.
+  effort into that only when absolutely necessary. If I've installed a newer
+  version that gets used early without me having to `chsh` the native startup
+  sequence.
 * [shellcheck](https://github.com/koalaman/shellcheck) has saved me from many
-  a scripting blunder - highly recommended.
+  a scripting blunder - highly recommended although you will find many places
+  where I've disagreed with its advice.
 * Every so often I'll un-comment PROFILE_LOG in `.bash_profile` and
   [profile](https://www.rosipov.com/blog/profiling-slow-bashrc/) what takes
   the most time. I've not felt any need to improve things in some time.
