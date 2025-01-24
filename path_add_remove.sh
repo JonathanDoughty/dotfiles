@@ -30,14 +30,14 @@ remove_path_duplicates() {
         (( index++ ))
     done
     [[ "$newPath" != "$PATH" ]] && \
-        vprintf 2 "\nDeduped PATH:\n%s\nwas:\n%s\n" "${newPath//:/$'\n'}" "${PATH//:/$'\n'}"
+        vprintf 3 "\nDeduped PATH:\n%s\nwas:\n%s\n" "${newPath//:/$'\n'}" "${PATH//:/$'\n'}"
     PATH=$newPath
     IFS=$oldIFS
 }
 
 ppath () {
     # prepend directories given as arguments to PATH
-    vprintf 2 "%d args, prepend: %s" "${#@}" "${*}"
+    vprintf 3 "%d args, prepend: %s" "${#@}" "${*}"
     local code n d
     # POSIXly reverse arguments (so that first of arguments is first in eventual PATH)
     # via https://unix.stackexchange.com/a/467924/13887
@@ -54,12 +54,12 @@ ppath () {
             PATH=$d:$PATH
         fi
     done
-    vprintf 2 "PATH: %s\n" "$PATH"
+    vprintf 3 "PATH: %s\n" "$PATH"
 }
 
 rpath () {
     # remove argument directories from PATH
-    vprintf 2 "%d args remove: %s" "${#@}" "${*}"
+    vprintf 3 "%d args remove: %s" "${#@}" "${*}"
     local oldIFS=$IFS r d newPath
     IFS=:
     for d in $PATH; do
@@ -72,5 +72,11 @@ rpath () {
     done
     IFS=$oldIFS
     PATH=$newPath
-    vprintf 2 "PATH: %s\n" "$PATH"
+    vprintf 3 "PATH: %s\n" "$PATH"
+}
+
+path () {
+    # Show PATH components individually from highest to lowest precedence
+    # shellcheck disable=SC2086 # word splitting wanted
+    (set -f; IFS=:; printf "%s\n" ${PATH})
 }

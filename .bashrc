@@ -139,9 +139,15 @@ _path_additions() {
                 add_to_my_path "${HOMEBREW_PREFIX}"/opt/coreutils/bin # GNU standard replacements
             fi
 
-            # I prefer manually maintained Python over homebrew's dependency updated one
-            add_to_my_path /Library/Frameworks/Python.framework/Versions/Current/bin
-            # Platform specific installations
+            # Move some externals ahead of homebrew's
+            local IFS=:
+            for p in $PATH ; do
+                if [[ "$p" =~ Python ]]; then
+                    add_to_my_path "$p" # prepend and remove duplicates
+                fi;
+            done
+ 
+            # My own platform specific installations take precedence
             add_to_my_path "${HOME}/.local/bin"
             ;;
     esac
@@ -197,7 +203,7 @@ _external_defs() { # functions, etc. related to local installs, external set up
         "bash-go.sh"             # golang dev
         "disable-bash-office.sh"
         "bash-tmux.sh"
-        "bash-python.sh"         # python dev
+        "enable_python.sh"       # python dev
         "disable-bash-conda.sh"
         "disable-bash-pyenv.sh"
         "disable-switch_java.sh"         # java dev
