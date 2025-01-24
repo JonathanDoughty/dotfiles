@@ -87,25 +87,23 @@
     alias = ! git config --get-regexp ^alias\\. | cut -c 7- # list aliases
     addm = ! git ls-files -mz | xargs -0 git add # stage modified
     addu = ! git ls-files -z --others --exclude-standard | xargs -0 git add # stage unknown
+    am = ! printf 'This does not work - see git-integration.sh'     # aliases can't override commands
     br = branch
     ca = commit --amend
     cm = commit -m              # commit modified
     co = checkout
     ch = checkout
-    # primary (most likely) branch name
-    # https://stackoverflow.com/a/70080259/1124740
-    default-branch = "!git branch --sort=-refname | grep -o -m1 '\\b\\(main\\|master\\|dev\\)\\b' || echo 'unknown_branch'"
-    fl = log -u  # file log - diff of changes to file
-    st = status -s -b # short status with current branch
-    undo = checkout HEAD --
-    undoall = ! git checkout HEAD -- $(git ls -m)
+    # diff shortcuts
     d = diff
     dfm = "!git diff $(git default-branch) --" # differences from primary to current branch
     dfs = "!git diff --stat $(git default-branch)..HEAD" # files changed vs default branch
     dlast = diff HEAD^ HEAD # what just changed?
     ds = diff --staged # differences staged vs current branch
-    # My generally preferred log detail
-    # Show diffs between branches: usage git ld branch1..branch2
+    # primary (most likely) branch name (via https://stackoverflow.com/a/70080259/1124740)
+    default-branch = "!git branch --sort=-refname | grep -o -m1 '\\b\\(main\\|master\\|dev\\)\\b' || echo 'unknown_branch'"
+    fc = fetch --prune -v # fetch changes
+    fl = log -u  # file log - diff of changes to file
+    # My preferred log detail - show diffs between branches: usage git ld branch1..branch2
     # Colors are 8-bit https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
     # Similar with wrapping, standard color names, subject and non-empty body, short author email
     ld = !git --no-pager log --graph --branches --abbrev-commit --date=relative \
@@ -116,21 +114,27 @@
     lpd = log -p # show patches diff style
     ls = ls-files # list git managed files
     lsu = ls-files --others --exclude-standard # List untracked files; add via: g addu
-    lsi = ls-files -o -i --exclude-standard    # List files ignored by git:
+    lsi = ls-files -o -i --exclude-standard    # List files ignored by git
     lr = ! git status -s \
       && git --no-pager log --since='3 days ago' --graph --abbrev-commit --date=relative \
           --pretty=format:'%w(132,0,10)%Cred%h%Creset -%C(magenta)%d%Creset %s% b %Cgreen(%cr - %cL)%Creset' # list recent commits
+    mhb = ! git merge $(hostname -s) # merge the local host branch into current
     pullnff = pull --no-ff # when pull alone disallows fast-forwards, likely due to pull.rebase=merges
     pushfwl = push --force-with-lease  # update remote branch that has been locally rebased
+    rbd = ! git rebase "$(git default-branch)" # rebase current branch with default
     rv = remote -v # list remotes
     slog = log --pretty=format:'%w(132,0,8)%Cred%h%Creset %C(magenta)%as%Creset%n%Cblue%s%Creset' --name-status -S # search commits changing the occurance of <string>
-    sh = ! git switch $(hostname -s)
-    sm = ! git switch main && git fetch --prune -v
-    sw = switch
+    # branch switching
+    sh = ! git switch $(hostname -s) # switch to localhost branch
+    sd = ! git switch $(git default-branch) # switch to default branch
+    sw = switch # switch shortcut
+    st = status -s -b # short status with current branch
+    undo = checkout HEAD --
+    undoall = ! git checkout HEAD -- $(git ls -m)
     # From http://haacked.com/archive/2014/07/28/github-flow-aliases/
     wip = !git add -u && git commit -m "WIP"  # save all changes as work-in-progress
     wipe = !git add -A && git commit -qm 'WIPE SAVEPOINT' && git reset HEAD~1 --hard # undo saved work-in-progress
-    # Difftastic
+    # Difftastic shortcuts
     dlog = -c diff.external=difft log --ext-diff
     ddiff = -c diff.external=difft diff
     dshow = -c diff.external=difft show --ext-diff
