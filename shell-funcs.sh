@@ -63,19 +63,21 @@ maybe () {
         shift
     fi
     cmd=( "$@" )
-    if [[ "$DRY_RUN" == "0" ]]; then
+    if [[ "${DRY_RUN:-0}" == "0" ]]; then
         # DRY_RUN isn't set or is 0: evaluate arguments in a sub-shell, capturing output
         vprintf $level "%s" "${cmd[*]}"
-        local cmd_output
+        local cmd_output tmp_output
+        tmp_output=/tmp/maybe_eval.$$
+        touch tmp_output        # insure existence
         (
             #printf "Start\n"
             eval "${cmd[*]}" 
             #printf "End\n"
             exit "${PIPESTATUS[0]}"
-        ) 1>/tmp/eval.$$ 2>&1 
+        ) 1>|"$tmp_output" 2>&1 # overwrite previous if any
         status=$?
-        cmd_output=$(tr -d '\0' </tmp/eval.$$)
-        command rm -f /tmp/eval.$$
+        cmd_output=$(tr -d '\0' <"${tmp_output}")
+        [[ "$level" -ge 3 ]] || command rm -f "$tmp_output" # clean up unless really verbose
         status=$?
         if [[ ! $? ]]; then
             vprintf "%s returned %d output:%s" "${cmd[*]}" "$status" "$cmd_output"
