@@ -93,7 +93,10 @@ _homebrew_integrations () {
             # otherwise, at one time I was using git@github.com:scop/bash-completion.git
         fi
     else
-        : # zsh MANPATH / completion TBD
+        fpath=($HOMEBREW_PREFIX/share/zsh/site-functions $fpath)
+        #typeset -U fpath # remove duplicates - is causing an issue with compaudit
+        autoload -U compinit ; compinit
+        # zsh MANPATH TBD
     fi
     export HOMEBREW_NO_ENV_HINTS=1 # stop with the hints already
 }
