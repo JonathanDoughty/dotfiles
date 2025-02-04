@@ -1,10 +1,6 @@
 # ~/.gitconfig-macos
 # macOS specific git tool configuration
 
-# Try to address `hugo mod` defaulting to https
-[url "ssh://diskstation.rhapsody.net/"]
-    insteadOf = https://diskstation.rhapsody.net/
-
 # prefer delta from homebrew's git-delta
 [core]
     pager = delta
