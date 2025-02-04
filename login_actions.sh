@@ -3,6 +3,13 @@
 
 declare -i verbose=0            # 1 - info; 2 - chattier & logged; 3 - executaion trace
 
+[[ -e "${HOME}/.env" ]] && source "${HOME}/.env"
+
+# Where the master copy of this lives, you might export that from ~/.env
+repo_dir="$(realpath -q "${DOTFILE_DIR:-/path/to/this/local/git/repo}")"
+[[ -n "$repo_dir" ]] || \
+    printf "Without knowing where %s comes from, much of this will break\n" "${BASH_SOURCE[0]}"
+
 settings () {
     [[ "$verbose" -gt 2 ]] && set -x
     [[ "$verbose" -gt 1 ]] && log=~/login_actions.txt
@@ -24,7 +31,6 @@ settings () {
         # Use `launchctl setenv` to export environmental changes to future processes
         # Best done as a start/end diff to pick up other changes
     fi
-    source_dir="${CM_DIR:-/path/to/git/repo}"  # where the master copy of this lives
 
     # This gets symlinked as app_script in a Platypus https://sveinbjorn.org/platypus
     # app which I run as a Login Item.
@@ -40,7 +46,7 @@ mount_cm () {
     # Check that my case sensitive sparsebundle, generally a separate login item, is accessible
     declare -i times delay=2
 
-    if [[ ! -d "${source_dir}" ]]; then
+    if [[ ! -d "${repo_dir}" ]]; then
         if [[ -d "$sparsebundle" ]]; then
             [ "$verbose" -gt 0 ] && \
                 printf "Opening %s\n" "$sparsebundle"
@@ -52,22 +58,22 @@ mount_cm () {
         fi
     else
         [[ "$verbose" -gt 0 ]] && \
-            printf "%s is accessible\n" "${source_dir}"
+            printf "%s is accessible\n" "${repo_dir}"
         return 0
     fi
 
     # Wait for sparsebundle contents to appear
     for times in 10 9 8 7 6 5 4 3 2 1 0; do
-        if [[ ! -d "${source_dir}" ]]; then
+        if [[ ! -d "${repo_dir}" ]]; then
             [[ "$verbose" -gt 1 ]] && \
-                printf "Waiting %s seconds for %s\n" $((times * delay)) "${source_dir}"
+                printf "Waiting %s seconds for %s\n" $((times * delay)) "${repo_dir}"
             sleep $delay
         else
             break
         fi
     done
-    if [[ ! -d "${source_dir}" ]]; then
-        printf "%s not accessible, exiting\n" "${source_dir}"
+    if [[ ! -d "${repo_dir}" ]]; then
+        printf "%s not accessible, exiting\n" "${repo_dir}"
         return 1
     fi
     return 0
@@ -86,15 +92,15 @@ check_scripts_sources () {
     }
     if [[ -n "$TERM_PROGRAM" ]]; then
         # I want this to run in the destination directory, not the source git repo
-        if [[ "${source_dir}" != "$(realpath "$(dirname "${BASH_SOURCE[0]}")")" ]] ; then
+        if [[ "${repo_dir}" != "$(realpath "$(dirname "${BASH_SOURCE[0]}")")" ]] ; then
             # This script
-            _compare_if_present "${source_dir}/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
+            _compare_if_present "${repo_dir}/${BASH_SOURCE[0]##*/}" "${BASH_SOURCE[0]}"
             # It's symlinked login item version
             _compare_if_present "$app_script" "${BASH_SOURCE[0]}"
             # Common environment definitions
-            _compare_if_present "${source_dir}/.envrc" ".envrc"
+            _compare_if_present "${repo_dir}/.envrc" ".envrc"
             # Actions
-            _compare_if_present "${source_dir}/HomeJustfile" "Justfile"
+            _compare_if_present "${repo_dir}/HomeJustfile" "Justfile"
         else
             printf "%s expects to run from %s not %s\n" "${BASH_SOURCE[0]}" "$HOME" "$PWD"
         fi
@@ -106,7 +112,8 @@ check_scripts_sources () {
 
 ssh_identities () {
     # Add identities so that all clients of ssh-agent have access to those.
-    source "${source_dir}/ssh_start_agent.sh"
+    # shellcheck disable=SC1091
+    source "${repo_dir}/ssh_start_agent.sh"
 }
 
 start_hammerspoon () {

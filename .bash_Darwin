@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # .bash_Darwin - macOS specific login items
 
-CM_DIR="${CM_DIR:-/path/to/git/repo}"
+DOTFILES="${DOTFILES:-/path/to/git/repo}"
 
 if [ -n "${ITERM_SESSION_ID}" ]; then
     # Use Apple's funky session saving / resume support
@@ -20,7 +20,7 @@ fi
 # See login_actions.sh
 dismount_cm () {
     local pids sparse_volume
-    sparse_volume="$(command df "${CM_DIR:-/path/to/volume/contents}" | awk '/\/dev/ {print $NF}')"
+    sparse_volume="$(command df "${DOTFILES:-/path/to/CM/volume}" | awk '/\/dev/ {print $NF}')"
     declare -i p
     # Signal processes (other than this one) accessing sparse bundle
     pids=$(lsof "$sparse_volume" | awk 'NR>1 {print $2}' | grep -v $$ | sort -u)
@@ -31,9 +31,9 @@ dismount_cm () {
 }
 
 # Check config files that are copied
-_COPIED=( "${CM_DIR}/.bash_profile" "${CM_DIR}/login_actions.sh" )
+_COPIED=( "${DOTFILES}/.bash_profile" "${DOTFILES}/login_actions.sh" )
 # let me know on login when any of these are out of sync
 for __f in "${_COPIED[@]}"; do
     [ -f "$__f" ] && diff -q "$__f" "${BASH_SOURCE[0]%/*}/${__f##*/}"
 done
-unset -v _COPIED
+unset -v _COPIED DOTFILES
