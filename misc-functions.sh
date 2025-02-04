@@ -182,12 +182,11 @@ lr () {  # list recent files
 if type rg &>/dev/null ; then
     rgh () {                  # ripgrep hidden, e.g., dot files too, with extras from RG_LOCAL 
         local cmd
-        printf -v cmd "rg --hidden %s %s" "${RG_LOCAL:+$RG_LOCAL}" "$*"
-        [[ "${_verbose:=0}" != "0" ]] &&
-            echo "$cmd"
-        eval "$cmd"
+        printf -v cmd "rg --hidden %s" "${RG_LOCAL:+$RG_LOCAL}"
+        [[ "${_verbose:=0}" != "0" ]] && trap "set +x" RETURN && set -x
+        $cmd "$@"
     }
-    rgi () { rgh --no-ignore "$@"; }                # and ignore any .gitignore files
+    rgi () { rgh --no-ignore "$@"; } # ... and don't ignore files excluded by .gitignore
 fi
 
 which () {  # `which` on steroids: how $@ will be interpreted by first one to succeed
