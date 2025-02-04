@@ -1,14 +1,13 @@
 #!/bin/bash
 # Example installation of controlled access / sensitive content
 
-# CUSTOM from environment or locally defined
-[[ -e ${CUSTOM} ]] || CUSTOM="/path/to/custom/repo"
-# If its not a directory assume a file within it, like this script
-[[ -d ${CUSTOM} ]] || CUSTOM=$(dirname "$CUSTOM")
+# PERSONAL_INSTALL from environment or locally defined should point to this script
+[[ -e ${PERSONAL_INSTALL} ]] || CUSTOM_DIR="/path/to/custom/repo/directory"
+CUSTOM_DIR=${CUSTOM_DIR:-$(dirname "$PERSONAL_INSTALL")}
 
 # Installation
 custom_installation () {
-    if [ -d "${CUSTOM}" ]; then
+    if [ -d "${CUSTOM_DIR}" ]; then
         # Examples of common files with more or less sensitive contents
         vprintf 1 "Installing links to/copies of controlled access files"
 

@@ -291,9 +291,15 @@ install () {
             vprintf "Skipping %s" "$PERSONAL_INSTALL"
         fi
     fi
+    if type just &>/dev/null; then
+        # I rely on Justfile to keep some home directory contents in sync
+        just update
+    fi
+
     [[ -e "$TMP_DIR" ]] && {
         vprintf "Debug results created in %s" "$TMP_DIR"
     }
+
     return 0
 }
 
