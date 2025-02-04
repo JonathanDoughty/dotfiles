@@ -3,17 +3,31 @@
 
 ssh_start_agent () {
 
+    local ssh_dir="${HOME}/.ssh" # you probably don't want to change this
+
+    if [[ ! -e "$ssh_dir" ]]; then
+        mkdir -p "$ssh_dir"
+        chmod 700 "$ssh_dir"
+        printf "Created %s; replace as needed; all bets are off without contents\n" "$ssh_dir"
+    fi
+    # This script is likely sourced: avoid a subshell (and multiple traps when sourced.)
+    trap "trap - RETURN; popd >/dev/null; set +x" RETURN
+    pushd "$ssh_dir" >/dev/null || return; set +x #; printf "pushed to\n%s\n" "$(dirs -v)"
+
     # Check for the far simpler https://www.funtoo.org/Funtoo:Keychain
     if type keychain &>/dev/null; then
-        eval "$(keychain --quiet --eval id_rsa_"$(hostname -s)")"
-        #eval "$(keychain --confhost --quiet --quick --eval id_rsa_"$(hostname)")"
         case "$OSTYPE" in
             (darwin*)
-                # Use macOS' ssh-add to get any Keychain Access additions
+                # Just start the agent(s) if needed
+                eval "$(keychain --quiet --quick --eval)"
+                # and use macOS' ssh-add to get any additions from Keychain Access
+                # without requiring password entry.
                 /usr/bin/ssh-add -q --apple-load-keychain 2>/dev/null
                 ;;
             (linux*)
-                : # TBD 
+                eval "$(keychain --quiet --quick --eval id_rsa_"$(hostname -s)")"
+                # Assumes hostname's key requires no password or prompts for one
+                # Others TBD
                 ;;
         esac
     else
@@ -24,13 +38,6 @@ ssh_start_agent () {
         vars="${vars//[$'\t\n\r']}"  # deal with bash 4 unset issue
         # shellcheck disable=SC2086  # word splitting desired
         unset $vars                  # start with environment cleaned of SSH_ vars
-        local ssh_dir="${HOME}/.ssh" # you probably don't want to change this
-
-        if [[ ! -e "$ssh_dir" ]]; then
-            mkdir -p "$ssh_dir"
-            chmod 700 "$ssh_dir"
-            printf "Created %s; replace as needed\n" "$ssh_dir"
-        fi
         SSH_ENV="${ssh_dir}/environment"; export SSH_ENV
         # shellcheck source=/dev/null
         [ -e "${SSH_ENV}" ] && . "${SSH_ENV}"
