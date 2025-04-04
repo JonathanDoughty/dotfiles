@@ -7,6 +7,7 @@ function emc {
     # emacsclient this uses is correctly paired with the running version.
 
     local SOC # path to Emacs' server socket
+    local applescript="tell application \"Emacs\" to activate"
 
     function _emc_start_emacs () {
         # If server's socket can't be found then start Emacs
@@ -15,7 +16,7 @@ function emc {
             case ${OSTYPE} in
                 (darwin*)
                     # This assumes Emacs' init sequence, like mine, includes (server-start)
-                    osascript -e "tell application \"Emacs\" to activate"
+                    osascript -e "$applescript"
                     ;;
                 (linux*)
                     emacs --daemon
@@ -125,13 +126,15 @@ function emc {
     if [ -n "$CLIENT" ]; then
         _emc_wait_for_server_response
 
+        # Invoke the client passing all arguments assuming each is a separate file
+        # ToDo: check that each argument exists as a file. If not assume filename with spaces.
         # shellcheck disable=SC2068 # Send each array element as separate argument
         "$CLIENT" -s "$SOC" -n -a \"\" $@
 
         # And focus Emacs
         case "$OSTYPE" in
             (darwin*)
-                osascript -e "tell application \"Emacs\" to activate"
+                osascript -e "$applescript"
                 ;;
             (linux*)
                 if type wmctrl &>/dev/null; then
@@ -148,22 +151,6 @@ function emr {
     # Open files read-only
     emc -e "(view-file \"$*\")"
 }
-
-# Tell applications (Emacs is the only one I use so far) where LibreOffice dictionaries are
-# located Better here than buried in .emacs.d/' twisty path although this is only useful if the
-# above ends up starting Emacs.
-if type hunspell &>/dev/null ; then
-    case ${OSTYPE} in
-        (darwin*)
-            dict_path="/Applications/LibreOffice.app/Contents/Resources/extensions/dict-en"
-            ;;
-        (linux*)
-            ;;
-    esac
-    if [[ -n "$dict_path" ]]; then
-        export DICPATH="$dict_path"
-    fi
-fi
 
 # eat terminal emulation
 if [[ -n "$EAT_SHELL_INTEGRATION_DIR" ]]; then
