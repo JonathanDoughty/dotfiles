@@ -5,10 +5,9 @@
 [[ -z "$ZSH_VERSION" && $_ != "$0" ]] || \
     [[ -n "$ZSH_VERSION" && "${zsh_eval_context[-1]}" = "file" ]] || \
     { echo "This file must be sourced to be useful."; exit 1; }
+[[ -t 0 ]] || return		# stdin not a terminal
 
-# Avoid some recent git dependence on less and friends
-# Works for diff, break log
-#export GIT_PAGER=cat
+preferred_pagers=( bat batcat moar less more ) # Linux renames bat as batcat
 
 less_exports () {
     if command -v lesspipe &>/dev/null; then
@@ -24,7 +23,8 @@ less_exports () {
     export LESSHISTFILE=/dev/null
 }
 
-for cmd in bat batcat moar less more; do       # Linux renames bat due to collision
+# Set up PAGER for first found of preferred pagers
+for cmd in ${preferred_pagers[*]}; do
     if  command -v "$cmd" &>/dev/null; then
         PAGER="$(command -v $cmd)"
         export PAGER
@@ -34,9 +34,10 @@ for cmd in bat batcat moar less more; do       # Linux renames bat due to collis
     fi
 done
 
+unset preferred_pagers
 unset -f less_exports
 
-command -v tput &>/dev/null || return 1  # no tput on, e.g., Synology
+command -v tput &>/dev/null || return 1  # no tput on, e.g., Synology DSM
 
 # Adapted from https://unix.stackexchange.com/a/147
 

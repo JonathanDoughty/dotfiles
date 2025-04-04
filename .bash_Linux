@@ -10,8 +10,3 @@ export HOMEBREW_NO_ENV_FILTERING=1
 
 # I use/prefer local email get delivered in Maildir format
 [[ -e ~/Maildir ]] && export MAIL=~/Maildir
-
-# insure ssh-agent is running
-SAME_DIR="$(dirname "$(readlink -n "${BASH_SOURCE[0]}")")" # generally this is a symlink
-test -f "${SAME_DIR}/ssh_start_agent.sh" && . "$_"
-unset SAME_DIR

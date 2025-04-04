@@ -24,6 +24,7 @@ is_defined() {
 vprintf () {
     # When _verbose >= optional first arg level output remainder with calling function to stderr
     # Suppressing / restoring active execution tracing in this function
+    [[ -t 0 ]] || return  # skip entirely if not a terminal
     {  _vflags="$-"; set +x; \
        trap 'case "$_vflags" in (*x*) unset _vflags; set -x ;; (*) unset _vflags ;; esac' RETURN EXIT; \
        } 2>/dev/null
@@ -68,7 +69,7 @@ maybe () {
         vprintf $level "%s" "${cmd[*]}"
         local cmd_output tmp_output
         tmp_output=/tmp/maybe_eval.$$
-        touch tmp_output        # insure existence
+        touch "$tmp_output"        # insure existence
         (
             #printf "Start\n"
             eval "${cmd[*]}" 

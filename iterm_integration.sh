@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+[[ -t 0 ]] || return            # skip entirely if not a terminal
 ITERM_PATH=${HOME}/.iterm2  # Note; non-standard path
 
 if [[ -n "$BASH_VERSION" ]]; then

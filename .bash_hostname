@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-# .bash_$(uname -n) - host specific startup
+# .bash_$(hostname -s) - host specific startup
 
-:  # Add host specific startup logic here
+# Replace this example with host specific startup logic
+printf "Yo, this is %s\n" "$(hostname -s)"

@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # .bash{rc,_aliases} - bash personal initializations; many years of accumulated cruft here
 
-[[ -z "$PS1" ]] && return  # Not interactive? Do nothing
+#[[ -t 0 ]] || return # scripts should not rely on this top level, connected to a terminal test
 
 # System definitions
-if [[ -f /etc/bashrc ]]; then
+if [[ -f /etc/bashrc ]] && [[ -z "$INSIDE_EMACS" ]]; then
     # shellcheck disable=SC1091
     . /etc/bashrc
 fi
 
-[[ "$EUID" -eq 0 ]] && return   # avoid all this if root
+[[ "$EUID" -eq 0 ]] && return   # avoid remainder if root
 
 declare -i _verbose=0           # 1 - report externals; 2 - more; 3 - detailed
-declare -i _debug=0             # 1 - currently unused; 2 - some execution traces
-# Minor optimization frequently used in other scripts
-: export "${HOSTNAME:=$(hostname -s)}"
+declare -i _debug=0             # 1 - reserved for sourced scripts; >2 - some execution traces
 
 # Functions used herein and in some other scripts in same repo
 _helper_functions() {
@@ -23,7 +21,7 @@ _helper_functions() {
     script_source() {
         local SCRIPT SCRIPT_FILE=$1
         local APPLE_TERM=1  # Ignore $2 and always find script (1 was $2)
-        [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
+        [[ "$_debug" -gt 2 ]] && trap "set +x" RETURN && set -x
         # I used to prefer that Terminal on macOS be more standard unless forced and relied on
         # alternatives like iTerm. Setting APPLE_TERM above enables full customization in
         # Terminal.
@@ -45,6 +43,7 @@ _helper_functions() {
 
     # For infrequently used functions, reduced .bashrc size, and general dotfile goodness:
     # redefine stub functions from external source files on first use.
+    # ToDo: Move this to misc-functions.sh ?
     lazy_load_from() {
         local REDEFINED_FUNCTION=${FUNCNAME[1]}
         local SCRIPT SCRIPT_FILE=$1 && shift
@@ -218,8 +217,11 @@ _external_defs() { # functions, etc. related to local installs, external set up
     done
 }
 
-# Adapt to the terminal shell runs in
+# Adapt to the terminal this shell runs in
 _terminal_setup() {
+    # Note: in most cases we would [[ -t 0 ]] || return but some scripts *may* want to do
+    # terminal-like adaptions. E.g., I think ssh_add / keychain may be viable
+
     [[ "$_debug" -gt 1 ]] && trap "set +x" RETURN && set -x
     if [[ -n "$TERMINAL_EMULATOR" || "$TERM_PROGRAM" == "vscode" ]]; then
         return                  # avoid terminal adaptation in IDE consoles
@@ -239,12 +241,7 @@ _terminal_setup() {
     done
 
     # See https://emacs.stackexchange.com/q/2573/5146 wrt Emacs shell-mode
-    # Note old bash version syntax for macOS native bash compatibility
-    # Avoid macOS / direnv / iTerm conflict
-    [[ -z "${OSTYPE/darwin*}" && -n "${ITERM_SESSION_ID}" ]] && \
-        PROMPT_COMMAND="${PROMPT_COMMAND}${PROMPT_COMMAND:+;}unset XPC_SERVICE_NAME;"
-
-    # Hack for direnv/iterm/.bashrc PROMPT_COMMAND ';;' still needed?
+    # Old bash version syntax for macOS native bash compatibility
     # An issue seen in emacs shell and Terminal exec bash
     PROMPT_COMMAND=${PROMPT_COMMAND/;;/;}
 }

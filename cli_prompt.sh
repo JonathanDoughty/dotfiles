@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Set up command line prompt glitz and naintaining full CLI history file.
+# Set up command line prompt glitz and maintaining full CLI history file.
 # Also works in zsh.
 
 # Selects from implementations based on:
@@ -7,6 +7,8 @@
 # * https://github.com/justjanne/powerline-go - if installed
 # * https://github.com/riobard/bash-powerline - modified version below
 # * Ancient tradition - from back in the day, and for dumb terminals
+
+[[ -t 0 ]] || return            # skip entirely if not a terminal
 
 # This consolidates various command line prompt setup utilities and settings I've tried / lived
 # with over decades. The order below determines which gets set up, as determined by the first one

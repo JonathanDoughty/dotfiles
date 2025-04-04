@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # ssh_start_agent
 
+#[[ -t 0 ]] || return            # scripts *may* want to ensure an agent can provide keys
+
 ssh_start_agent () {
 
     local ssh_dir="${HOME}/.ssh" # you probably don't want to change this

@@ -2,6 +2,7 @@
 # enable_direnv support
 
 type direnv &>/dev/null || return 1
+[[ -t 0 ]] || return            # skip entirely if not a terminal
 
 _set_umask_via_direnv () {
     # direnv only exports environment changes, create a work around

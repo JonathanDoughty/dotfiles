@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # .bash_profile - login shell initialization
 
-[ -z "$PS1" ] && return # If not running interactively, do nothing else
+[[ -t 0 ]] || return # Do nothing if stdin is not a terminal
+
+# Further shell adaptations below from
+ADAPTATIONS+=(~/.bashrc)                # Generic aliases and functions
+ADAPTATIONS+=(~/.bash_"$(uname -s)")    # for this OS
+ADAPTATIONS+=(~/.bash_"$(hostname -s)") # for this host
+ADAPTATIONS+=(~/.bash_custom)           # additional user customization
 
 # Avoid macOS's ancient bash
 if [ "${BASH_VERSINFO[0]}" == "3" ]; then
@@ -13,6 +19,9 @@ if [ "${BASH_VERSINFO[0]}" == "3" ]; then
                     exec ${RECENT_BASH} --login
                 fi
             done
+            ;;
+        (*)
+            printf "Not an interactive shell\n"
             ;;
     esac
 fi
@@ -28,24 +37,18 @@ if [ -n "${PROFILE_LOG}" ]; then
     set -x
 fi
 
-[ -n "$ENV_SET" ] && return  # from .bashrc; avoid multiple invokations (e.g., Synology)
-
-# Generic aliases and functions
-if [ -f ~/.bashrc ]; then
-    source ~/.bashrc
+if [[ "$ENV_SET" == "$PATH" ]]; then
+    printf "ENV_SET (%s) == PATH (%s), redundant?\n" "$ENV_SET" "$PATH"
+    : # && return  # set in .bashrc; avoid multiple invocations (e.g., Synology)
 fi
 
-# System specific settings
-OS_SETTINGS=~/.bash_$(uname -s)
-if [ -f "$OS_SETTINGS" ]; then
-    source "$OS_SETTINGS"
-fi
-
-# Host specific settings
-HOST_SETTINGS=~/.bash_$(hostname -s)
-if [ -f "$HOST_SETTINGS" ]; then
-    source "$HOST_SETTINGS"
-fi
+# Include others, in order
+for f in "${ADAPTATIONS[@]}"; do
+    if [ -f "$f" ]; then
+        : printf "sourcing %s\n" "$f"
+        source "$f"
+    fi
+done
 
 if [ -n "${PROFILE_LOG}" ]; then
     set +x
@@ -63,4 +66,4 @@ if [ -n "${PROFILE_LOG}" ]; then
     esac
     unset PROFILE_LOG CMD
 fi
-unset OS_SETTINGS HOST_SETTINGS
+unset ADAPTATIONS

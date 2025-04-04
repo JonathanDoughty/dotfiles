@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # enable_fzf - fuzzy finder configuration
+# See also fzy - https://github.com/jhawthorn/fzy
 
-type fzf &>/dev/null || return 1 # skip if fzf is unavailable
-is_sourced || return 1          # from shell-funcs.sh
+[[ -t 0 ]] && return 1		       # skip if not attached to a terminal
+type fzf &>/dev/null || return 2       # or if fzf is unavailable
+is_sourced || return 3                 # or unless sourced (from shell-funcs.sh)
 
 # Control whether my preferences override normal fzf behavior
 _override_completions=1
