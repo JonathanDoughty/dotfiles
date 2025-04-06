@@ -1,5 +1,5 @@
-#!/bin/bash   # use native bash even if it is ancient (macOS)
-
+#!/bin/bash
+# Use native bash even if it is ancient (macOS)
 # YakShave: replace with https://github.com/andsens/homeshick
 # YakShave: replace the installation functions with a table driven array
 # YakShave: given a table driven array, implement an uninstall to restore state

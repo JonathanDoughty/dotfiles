@@ -25,9 +25,10 @@ indent_style = space
 indent_size = 4
 
 # Lua
+# See http://lua-users.org/wiki/LuaStyleGuide
 [*.lua]
 indent_style = space
-indent_size = 2  # http://lua-users.org/wiki/LuaStyleGuide
+indent_size = 2
 
 # Markdown
 [*.md]
@@ -36,9 +37,10 @@ insert_final_newline = true
 trim_trailing_whitespace = false
 
 # Perl
+# https://perldoc.perl.org/perlstyle
 [*.pl]
 indent_style = space
-indent_size = 4 # https://perldoc.perl.org/perlstyle
+indent_size = 4
 
 # Python
 [*.py]
@@ -55,7 +57,7 @@ indent_size = 2
 [Makefile]
 indent_style = tab
 
-# direnv - does direnv-mode work better?
+# direnv - envrc.el works better in emacs
 [.envrc]
 #file_type_emacs = sh
 #file_type_ext = .sh

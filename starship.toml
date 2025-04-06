@@ -114,7 +114,7 @@ disabled = false
 format = '[$symbol]($style) '
 style = 'bold red'
 symbol = "#"
-disabled = false
+disabled = true  # the default for a reason it seems: fooled by sudoers.d
 
 [username]
 show_always = true
