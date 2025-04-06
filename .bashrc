@@ -203,7 +203,6 @@ _external_defs() { # functions, etc. related to local installs, external set up
         "disable-bash-office.sh"
         "bash-tmux.sh"
         "enable_python.sh"       # python dev
-        "disable-bash-conda.sh"
         "disable-bash-pyenv.sh"
         "disable-switch_java.sh"         # java dev
         "bash-dev.sh"            # miscellaneous development
