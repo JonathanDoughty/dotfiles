@@ -20,13 +20,13 @@ _set_umask_via_direnv () {
 }
 
 if [[ -n "$BASH_VERSION" ]]; then
-    PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}_set_umask_via_direnv"
+    PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND};}_set_umask_via_direnv"
 
     # See https://emacs.stackexchange.com/q/2573/5146 wrt Emacs shell-mode
     # Note old bash version syntax for macOS native bash compatibility
-    # Avoid macOS / direnv / iTerm conflict
+    # Avoid macOS / direnv / iTerm conflict - still needed?
     [[ -z "${OSTYPE/darwin*}" && -n "${ITERM_SESSION_ID}" ]] && \
-        PROMPT_COMMAND="${PROMPT_COMMAND}:+${PROMPT_COMMAND;}unset XPC_SERVICE_NAME"
+        PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND};}unset XPC_SERVICE_NAME"
 
     eval "$(direnv hook bash)"
 elif [[ -n "$ZSH_VERSION" ]]; then

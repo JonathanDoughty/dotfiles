@@ -182,9 +182,10 @@ lr () {  # list recent files
 if type rg &>/dev/null ; then
     rgh () {                  # ripgrep hidden, e.g., dot files too, with extras from RG_LOCAL 
         local cmd
+        # RG_LOCAL="--glob='!venv/**'"; export RG_LOCAL in .envrc for example
         printf -v cmd "rg --hidden %s" "${RG_LOCAL:+$RG_LOCAL}"
         [[ "${_verbose:=0}" != "0" ]] && trap "set +x" RETURN && set -x
-        $cmd "$@"
+        eval $cmd "$@"
     }
     rgi () { rgh --no-ignore "$@"; } # ... and don't ignore files excluded by .gitignore
 fi
@@ -346,6 +347,11 @@ EOF
 _linux_funcs () {
     _is_type df 'function' || \
         df () { command df -h -x tmpfs -x squashfs -x devtmpfs "$@"; }
+    pbcopy () {
+        # Piping command output into this copies it to the clipboard
+        # Via https://jvns.ca/til/vim-osc52/
+        printf "\033]52;c;%s\007" "$(base64 | tr -d '\n')"
+    }
     pstree () { /usr/bin/pstree -Gpu "$@"; }
     rm () { command rm -i "$@"; }
     if [ -n "${DESKTOP_SESSION}" ]; then  # When in desktop session, per freedesktop.org

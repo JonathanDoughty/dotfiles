@@ -13,11 +13,12 @@
 # This consolidates various command line prompt setup utilities and settings I've tried / lived
 # with over decades. The order below determines which gets set up, as determined by the first one
 # recognized by _prompt_setup, except in the case of dumb terminals that always use traditional.
+# See also git-integration.sh for GIT_CEILING_DIRECTORY
 
 _PROMPT_SELECTIONS=( "starship" "powerline-go" "_bash_powerline" "_traditional")
 _COLOR_THEME="base16-solarized-dark.sh" # see themes/*.sh
 _THEME_DIR="$(dirname "${BASH_SOURCE[0]}")/themes"
-_CLI_HISTORY=~/.full_history
+_CLI_HISTORY=~/.full_history    # where the history of all commands are appended
 
 if [[ -z "$_PS_SYMBOL" ]]; then # OS identifying symbol
     case "$(uname)" in
@@ -121,6 +122,7 @@ _zsh_powerline-go() {
 
 _bash_powerline() {
     # Modified from: https://github.com/riobard/bash-powerline
+    # It's been a long time since I tested this
     ## set to 0 to disable
     POWERLINE_GIT=${POWERLINE_GIT:=1}
     # For full directory use the first, for the basename of the current working directory only use \W
@@ -158,7 +160,7 @@ _bash_powerline() {
                 ref=$($git_eng describe --tags --always 2>/dev/null)
             fi
 
-            [[ -n "$ref" ]] || return  # not a git repo
+            [[ -n "$ref" ]] || return # not a git repo (shouldn't this be moved up?)
 
             local marks
 
@@ -228,7 +230,7 @@ _traditional() {
     local NONE="\[\033[0m\]"
 
     if [ "${BASH/*bash}" == "" ] && [ $EUID -ne 0 ]; then
-        # Include simople hostname in ssh connections
+        # Include simple hostname in ssh connections
         PS1="${HLITE}${SSH_CONNECTION:+${HOSTNAME%%[-.]*}} \W${YELLOW} \$(parse_git_branch)${NONE} $ "
     fi
 }
@@ -339,8 +341,8 @@ _command_history_setup() {
         elif [[ "$1" =~ ^[0-9]*$ ]]; then
             matches="$1" && shift
         fi
-        # occurances of pattern in history
-        grep "$@" "$_CLI_HISTORY" | tail -n "$matches"
+        # occurrences of pattern in history (assume no flags)
+        grep -- "$@" "$_CLI_HISTORY" | tail -n "$matches"
         # ToDo: use rg/ripgrep if available
     }
 }

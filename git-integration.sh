@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
+# git command integration
+
+# See also cli_prompt.sh for command line git info as part of prompt
+# as well as shortcuts in misc-functions.sh
 
 git_environment() {
     local CM
-    CM=$(realpath "${HOME}/CM" 2>/dev/null)
+    CM=${CM_DIR:-$(realpath "${HOME}/CM" 2>/dev/null)}
     # Tell git not to look above home or my CM area
     export GIT_CEILING_DIRECTORIES="${HOME}${CM:+:}${CM}"
 }

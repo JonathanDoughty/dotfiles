@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # brew-integration.sh - brew related shell integration and aliases/functions
+# Note that in one of my twistier mazes this gets invoked via ~/TW/.envrc
+
 # shellcheck disable=SC2317 # usage defined at top level for visibility; redefined internally
 
 # YakShave: Flesh out the _depends_on functionality
 
 if [[ -n "$ZSH_VERSION" ]]; then
     : # zsh accounted for
-elif [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
-    return                      # not dealing with old bash yet
 fi
 
 _bash_brew_usage () {
@@ -30,7 +30,14 @@ bash completion.
 EOF
 
 }
-__bash_brew_usage=$(declare -f -p _bash_brew_usage) # redefine from global variable below
+
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
+    # Is there an issue with login_actions's use of direnv to invoke this?
+    # What else breaks?
+    :
+else
+    __bash_brew_usage=$(declare -f -p _bash_brew_usage) # redefine from global variable below
+fi
 
 _homebrew_setup () {
     # Find homebrew's installation directory and update the environment
@@ -101,11 +108,28 @@ _homebrew_integrations () {
     export HOMEBREW_NO_ENV_HINTS=1 # stop with the hints already
 }
 
+_formula_integrations () {
+    # Integration for specific formula
+
+    for formula in $(brew list); do
+        case "$formula" in
+            (hunspell)
+                libreoffice_dict="/Applications/LibreOffice.app/Contents/Resources/extensions/dict-en"
+                if [[ -d "$libreoffice_dict" ]]; then
+                    export DICPATH="${DICPATH:+$DICPATH:}$libreoffice_dict"
+                fi
+                #printf "DICPATH: %s\n" "$(env | grep DICPATH)" 2>&1
+            ;;
+        esac
+    done
+}
+
 _homebrew_setup
 
 if [[ -n "${HOMEBREW_PREFIX}" ]]; then
 
     _homebrew_integrations
+    _formula_integrations
 
     # Define wrapper function around normal brew shell
     brew() {
@@ -239,7 +263,7 @@ if [[ -n "${HOMEBREW_PREFIX}" ]]; then
     }
 fi
 
-unset -f _bash_brew_usage _homebrew_setup _homebrew_integrations
+unset -f _bash_brew_usage _homebrew_setup _homebrew_integrations _formula_integrations
 
 ( # Being sourced?
     [[ -n $ZSH_VERSION && $ZSH_EVAL_CONTEXT =~ :file$ ]] ||

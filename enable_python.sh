@@ -27,16 +27,13 @@ _python_path_additions () {
         (*)
             if type python3 &>/dev/null; then
                 if ! type pip3 &>/dev/null; then
-                    printf "Warning: using %s\n" "$(type -p python3), no pip3\n" 1>&2
-                    # ToDo what is the right thing on Linux, where system python3 does not
-                    # install pip or pip3 (but linuxbrew adds it's own pip3)?
-                    # https://www.dwarmstrong.org/pyenv/ suggests pyenv though I have bad
-                    # memories about it's shims. A good excuse to try uv
-                    # https://docs.astral.sh/uv/
+                    : printf "Warning: using %s, no pip3\n" "$(type -p python3)" 1>&2
+                    # TODO: what is the right thing on Linux/DSM, where system python3 does not
+                    # install pip or pip3 (but linuxbrew adds it's own pip3)? A good excuse to
+                    # try uv https://docs.astral.sh/uv/
                 fi
             else
-                # What's to be done here?
-                return
+                : # No python3, enabling is gonna be rough
             fi
             ;;
     esac

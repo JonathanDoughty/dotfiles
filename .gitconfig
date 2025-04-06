@@ -88,3 +88,8 @@
 # Externalize the growing number of aliases
 [include]
     path = ~/CM/dotfiles/git-aliases
+
+# Any other extras or overrides
+[include]
+    path = ~/.gitconfig-custom
+    
