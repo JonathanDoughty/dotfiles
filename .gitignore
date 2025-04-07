@@ -1,6 +1,7 @@
 # .gitignore for dotfiles
 # auto downloaded files
 git-completion-v*.*
+git-completion.*
 # Ancient stuff
 XResources/*[^\.]
 # Maven
