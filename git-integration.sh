@@ -21,12 +21,21 @@ setup_completions() {
     script_dir="$(realpath "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
     printf -v completions_file "%s/git-completion-v%s.%s" "$script_dir" "$_git_version" "$_shell"
     if [[ ! -e "$completions_file" ]]; then
-        local src_dir url
+        local src_dir url download
         # shellcheck disable=SC2059  # we want to use _src_url from above
         printf -v src_dir "$_src_url" "$_git_version"
-        printf -v url "%s/git-completion.%s" "$src_dir" "$_shell"
-        command rm -f "${script_dir}/git-completion-v"*".${_shell}"
-        command curl --silent "$url" -o "${completions_file}"
+        printf -v download "git-completion.%s" "$_shell"
+        printf -v url "%s/%s" "$src_dir" "$download"
+        command rm -f "${script_dir}/git-completion-v"*".${_shell}" # remove all old versions
+        if type curl &>/dev/null; then
+            command curl --silent "$url" -o "${completions_file}"
+        elif type wget &>/dev/null; then
+            command wget --quiet "$url"
+            command mv "$download" "${completions_file}"
+        else
+            printf "Need either curl or wget for git version %s completions download\n" "$_git_version" 2>&1
+            return
+        fi
     fi
     source "$completions_file"
 }
